@@ -33,7 +33,7 @@
   var DEFAULTS = {
     site: {
       name: 'ساز و راز', tagline: 'استودیو ملودی و هارمونی', badge: 'PRO',
-      url: 'https://example.com', title: 'ساز و راز | آهنگسازی، میکس و مسترینگ، آکورد و نت',
+      url: 'https://sazoraz.github.io', title: 'ساز و راز | آهنگسازی، میکس و مسترینگ، آکورد و نت',
       desc: 'مرجع فارسی آهنگسازی و تنظیم، میکس و مسترینگ، آکوردهای مدرن و نت‌های پیانو و گیتار با دانلود رایگان.',
       ogImage: '', favicon: '/assets/favicon.svg', api: 'https://log.ttdiscorde23.workers.dev'
     },
@@ -232,5 +232,101 @@
       '<script src="/assets/core.js" defer></script></body></html>';
   }
 
-  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page };
+
+  /* ================= صفحهٔ پست ================= */
+  var CATS = {
+    compose: { theme: 'compose', name: 'آهنگسازی و تنظیم', dir: '/compose/' },
+    mixing: { theme: 'mix', name: 'میکس و مسترینگ', dir: '/mixing/' },
+    chords: { theme: 'chords', name: 'آکوردها', dir: '/chords/' },
+    sheets: { theme: 'sheets', name: 'نت‌ها', dir: '/sheets/' },
+    extra: { theme: 'extra', name: 'متفرقه', dir: '/blog/' }
+  };
+  var POST_DEFAULT = { slug: '', cat: 'compose', title: '', desc: '', img: '', imgAlt: '', tag: '', readTime: '', date: '', updated: '', author: 'ساز و راز', comments: true, blocks: [], related: [], seo: { title: '', desc: '', noindex: false } };
+  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده' };
+  function catInfo(s, cat) {
+    var c = CATS[cat] || CATS.extra, sec = (s.sections || []).filter(function (x) { return x.auto === cat; })[0];
+    return { theme: c.theme, dir: c.dir, name: (sec && sec.short) || c.name };
+  }
+  function postUrl(s, p) { return s.site.url.replace(/\/$/, '') + catInfo(s, p.cat).dir + p.slug + '/'; }
+  function absUrl(s, u) { return !u ? '' : /^https?:\/\//.test(u) ? u : s.site.url.replace(/\/$/, '') + (u.charAt(0) === '/' ? u : '/' + u); }
+  function inline(t) {
+    return esc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g, '<a href="$2" rel="noopener">$1</a>').replace(/\n/g, '<br>');
+  }
+  function ytId(u) {
+    u = String(u || '').trim(); var m = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/.exec(u);
+    return m ? m[1] : (/^[A-Za-z0-9_-]{11}$/.test(u) ? u : '');
+  }
+  function words(p) {
+    var t = [p.desc || ''];
+    (p.blocks || []).forEach(function (b) { t.push(b.text || '', b.caption || '', b.title || ''); });
+    return t.join(' ').split(/\s+/).filter(Boolean).length;
+  }
+  function readMin(p) { return p.readTime ? p.readTime : Math.max(1, Math.ceil(words(p) / 170)) + ' دقیقه مطالعه'; }
+  function faDate(d) { try { return d ? new Date(d + 'T12:00:00').toLocaleDateString('fa-IR') : ''; } catch (e) { return ''; } }
+  function blockHtml(b, i) {
+    switch (b.t) {
+      case 'paragraph': return (b.text || '').split(/\n{2,}/).filter(function (x) { return x.trim(); }).map(function (x) { return '<p>' + inline(x.trim()) + '</p>'; }).join('');
+      case 'heading': var l = b.level === 3 ? 3 : 2; return '<h' + l + ' id="h' + i + '">' + esc(b.text) + '</h' + l + '>';
+      case 'image': return b.src ? '<figure class="fig"><img src="' + esc(href(b.src)) + '" alt="' + esc(b.alt || b.caption || '') + '" loading="lazy" decoding="async">' + (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') + '</figure>' : '';
+      case 'video': var id = ytId(b.url); return id ? '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + id + '" title="' + esc(b.title || 'ویدیو') + '" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' : '';
+      case 'soundcloud': return /^https:\/\/soundcloud\.com\//.test(b.url || '') ? '<div class="sc"><iframe src="https://w.soundcloud.com/player/?url=' + encodeURIComponent(b.url) + '&color=%23ff9770&hide_related=true&show_comments=false" title="' + esc(b.title || 'SoundCloud') + '" loading="lazy"></iframe></div>' : '';
+      case 'audio': return b.src ? '<div class="aud">' + (b.title ? '<b>' + esc(b.title) + '</b>' : '') + '<audio controls preload="none" src="' + esc(href(b.src)) + '"></audio></div>' : '';
+      case 'highlight': return '<aside class="hl-box">' + inline(b.text || '') + '</aside>';
+      case 'list': return '<ul>' + (b.text || '').split('\n').filter(function (x) { return x.trim(); }).map(function (x) { return '<li>' + inline(x.trim()) + '</li>'; }).join('') + '</ul>';
+      case 'button': return '<p><a class="btn" href="' + esc(href(b.href)) + '" rel="noopener">' + ic('arrow') + esc(b.label || 'دانلود') + '</a>' + (b.note ? ' <small class="muted">' + esc(b.note) + '</small>' : '') + '</p>';
+      case 'divider': return '<hr class="dv">';
+    }
+    return '';
+  }
+  function relCard(r) {
+    return '<article class="card"><div class="thumb">' + (r.img ? '<img src="' + esc(href(r.img)) + '" alt="' + esc(r.title) + '" loading="lazy" decoding="async">' : '<div class="ph"></div>') + '</div><div class="card-b"><h3><a class="stretch" href="' + esc(href(r.href)) + '">' + esc(r.title) + '</a></h3>' + (r.desc ? '<p>' + esc(r.desc) + '</p>' : '') + '</div><span class="cta">مشاهده</span></article>';
+  }
+  function postBody(s, p) {
+    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); return blockHtml(b, i); }).join('');
+    var toc = heads.length >= 3 ? '<nav class="toc" aria-label="فهرست مطالب"><b>فهرست مطالب</b><ol>' + heads.map(function (h) { return '<li' + (h.l === 3 ? ' style="margin-right:16px;opacity:.85"' : '') + '><a href="#' + h.id + '">' + esc(h.text) + '</a></li>'; }).join('') + '</ol></nav>' : '';
+    var meta = [faDate(p.date), readMin(p), p.author].filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
+    var rel = (p.related || []).filter(function (r) { return r.title && r.href; });
+    return '<div class="art-wrap t-' + ci.theme + '"><article class="art">' +
+      '<nav class="crumbs" aria-label="مسیر صفحه"><a href="/">خانه</a><span>›</span><a href="' + ci.dir + '">' + esc(ci.name) + '</a><span>›</span><span>' + esc(p.title) + '</span></nav>' +
+      '<header class="art-h">' + (p.tag ? '<span class="chip">' + esc(p.tag) + '</span>' : '') + '<h1>' + esc(p.title) + '</h1>' + (p.desc ? '<p class="lead">' + esc(p.desc) + '</p>' : '') + '<div class="art-meta">' + meta + '</div></header>' +
+      (p.img ? '<figure class="cover"><img src="' + esc(href(p.img)) + '" alt="' + esc(p.imgAlt || p.title) + '" fetchpriority="high" decoding="async"></figure>' : '') +
+      toc + '<div class="prose">' + bodyHtml + '</div>' +
+      '<div class="art-foot"><button class="btn btn-w" type="button" data-share>' + ic('arrow') + 'اشتراک‌گذاری</button><a class="btn btn-dark" href="' + ci.dir + '">بیشتر در ' + esc(ci.name) + '</a></div></article>' +
+      '<section class="related" data-cat="' + esc(p.cat) + '" data-slug="' + esc(p.slug) + '" data-manual="' + (rel.length ? 1 : 0) + '"' + (rel.length ? '' : ' hidden') + '><h2>مطالب مرتبط</h2><div class="grid v">' + rel.map(relCard).join('') + '</div></section>' +
+      (p.comments !== false ? '<section class="box cm" id="comments" data-post="' + esc(p.slug) + '"><h2>نظرات</h2><div id="cm-list" class="list"><div class="muted">در حال بارگذاری نظرات...</div></div><div id="cm-form"></div></section>' : '') + '</div>';
+  }
+  function postJsonLd(s, p) {
+    var ci = catInfo(s, p.cat), u = s.site.url.replace(/\/$/, ''), url = postUrl(s, p);
+    var art = { '@type': 'Article', headline: p.title, description: p.seo && p.seo.desc || p.desc, inLanguage: 'fa-IR', mainEntityOfPage: url, author: { '@type': 'Person', name: p.author || s.site.name }, publisher: { '@type': 'Organization', name: s.site.name, logo: { '@type': 'ImageObject', url: absUrl(s, s.site.favicon) } } };
+    if (p.img) art.image = [absUrl(s, p.img)]; if (p.date) art.datePublished = p.date; art.dateModified = p.updated || p.date || undefined;
+    var bc = { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'خانه', item: u + '/' }, { '@type': 'ListItem', position: 2, name: ci.name, item: u + ci.dir }, { '@type': 'ListItem', position: 3, name: p.title, item: url }] };
+    return JSON.stringify({ '@context': 'https://schema.org', '@graph': [art, bc] }).replace(/</g, '\\u003c');
+  }
+  function postHtml(s, p) {
+    var ci = catInfo(s, p.cat), url = postUrl(s, p), fl = fontLink(s), seo = p.seo || {};
+    var ttl = seo.title || (p.title + ' | ' + s.site.name), dsc = seo.desc || p.desc || s.site.desc, img = p.img ? absUrl(s, p.img) : absUrl(s, s.site.ogImage);
+    return '<!DOCTYPE html>\n<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+      '<title>' + esc(ttl) + '</title><meta name="description" content="' + esc(dsc) + '">' +
+      '<link rel="canonical" href="' + esc(url) + '"><meta name="robots" content="' + (seo.noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large') + '">' +
+      '<meta name="theme-color" content="' + esc(s.ui.bg) + '"><meta name="sr-api" content="' + esc(s.site.api) + '">' +
+      '<meta property="og:type" content="article"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="' + esc(s.site.name) + '"><meta property="og:title" content="' + esc(ttl) + '"><meta property="og:description" content="' + esc(dsc) + '"><meta property="og:url" content="' + esc(url) + '">' +
+      (img ? '<meta property="og:image" content="' + esc(img) + '"><meta name="twitter:image" content="' + esc(img) + '">' : '') + (p.date ? '<meta property="article:published_time" content="' + esc(p.date) + '">' : '') +
+      '<meta name="twitter:card" content="summary_large_image"><link rel="icon" href="' + esc(s.site.favicon) + '">' +
+      '<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' + (fl ? '<link rel="stylesheet" href="' + esc(fl) + '">' : '') +
+      '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg">' + cssVars(s) + '</style><script type="application/ld+json">' + postJsonLd(s, p) + '</script></head>' +
+      '<body class="' + (s.ui.dots ? 'dots ' : '') + 't-' + ci.theme + '"><div class="pbar" id="pbar"></div><a class="skip" href="#main">پرش به محتوا</a>' + header(s, ci.dir) +
+      '<main id="main" class="wrap">' + postBody(s, p) + '</main>' + footer(s) +
+      '<script src="/assets/core.js" defer></script><script src="/assets/post.js" defer></script></body></html>';
+  }
+  function archivePage(s, cat) {
+    var ci = catInfo(s, cat), u = s.site.url.replace(/\/$/, ''), t = ci.name + ' | ' + s.site.name;
+    return '<!DOCTYPE html>\n<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+      '<title>' + esc(t) + '</title><meta name="description" content="' + esc('آرشیو مطالب ' + ci.name + ' در ' + s.site.name) + '"><link rel="canonical" href="' + esc(u + ci.dir) + '"><meta name="robots" content="index,follow">' +
+      '<meta name="theme-color" content="#0e1118"><link rel="icon" href="/assets/favicon.svg"><link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' +
+      '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg"></style></head><body class="t-' + ci.theme + '" data-cat="' + esc(cat) + '"><a class="skip" href="#main">پرش به محتوا</a><div id="hdr"></div>' +
+      '<main id="main" class="wrap"><div class="pg wide"><div class="pg-h"><h1>' + esc(ci.name) + '</h1></div><div id="list" class="grid v"><div class="box">در حال بارگذاری...</div></div><div class="acts"><button class="btn" type="button" id="more" hidden>نمایش بیشتر</button></div></div></main><div id="ftr"></div>' +
+      '<script src="/assets/render.js"></script><script src="/assets/shell.js" data-active="' + esc(ci.dir) + '"></script><script src="/assets/archive.js" defer></script></body></html>';
+  }
+
+  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId };
 });
