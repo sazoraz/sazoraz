@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><title>پست‌ساز ساز و راز</title>
+<link rel="stylesheet" href="/assets/theme.css"><style id="cfg"></style><link id="fontlink" rel="stylesheet" href="">
+<style>
+#fab{position:fixed;bottom:18px;left:18px;z-index:200;width:58px;height:58px;border-radius:50%;border:3px solid #000;background:var(--c-sheets);color:#fff;box-shadow:4px 4px 0 #000;display:grid;place-items:center}
+#fab .ic{width:26px;height:26px}
+#pnl{position:fixed;z-index:210;background:#12141c;color:#eee;border:3px solid #000;display:flex;flex-direction:column;font-size:13px;line-height:1.7;bottom:0;left:0;right:0;height:78vh;border-radius:20px 20px 0 0;transform:translateY(105%);transition:transform .3s}
+#pnl.open{transform:none}
+@media(min-width:900px){#pnl{top:0;bottom:0;left:0;right:auto;width:440px;height:auto;border-radius:0 20px 20px 0;transform:translateX(-105%)}}
+.ph-h{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:2px solid #000;background:#1b202c}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;border-bottom:2px solid #000;scrollbar-width:none}
+.tabs button{flex:none;padding:6px 14px;border-radius:9px;border:2px solid #000;background:#262c3b;color:#cfd3de;font-weight:800;font-size:12px}
+.tabs button.on{background:var(--c-compose);color:#111}
+#body{flex:1;overflow:auto;padding:14px 16px 90px}
+.f{display:flex;flex-direction:column;gap:3px;margin-bottom:11px}
+.f>span{font-size:11px;color:#9aa3b5}
+.f input[type=text],.f input[type=url],.f input[type=password],.f input[type=date],.f textarea,.f select{background:#1b202c;border:2px solid #000;border-radius:9px;color:#fff;padding:8px 10px;font:inherit;width:100%}
+.f textarea{min-height:90px;resize:vertical}
+.f.row{flex-direction:row;align-items:center;gap:10px}.f.row>span{font-size:12px;color:#eee}
+.ltr{direction:ltr;text-align:left}
+details.d{background:#181b25;border:2px solid #000;border-radius:12px;padding:8px 12px;margin-bottom:10px}
+details.d>summary{cursor:pointer;font-weight:800;padding:4px 0}
+.bar{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap}
+.bar button,.pb{padding:6px 12px;border-radius:8px;border:2px solid #000;background:#262c3b;color:#fff;font-weight:800;font-size:12px}
+.pb{background:var(--c-mix);color:#111;width:100%;padding:10px;margin-bottom:8px;font-size:13px}
+.pb.dg{background:#ff6b81;color:#fff}.pb.s{background:#262c3b;color:#fff}
+.note{font-size:11px;color:#9aa3b5;background:#181b25;border:2px dashed #333;border-radius:10px;padding:8px 10px;margin:8px 0}
+#st{white-space:pre-wrap;font-size:12px;margin-top:8px;color:var(--c-mix)}
+h4.g{margin:14px 0 8px;font-size:12px;color:var(--c-compose)}
+.pl{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#181b25;border:2px solid #000;border-radius:10px;padding:8px 10px;margin-bottom:8px}
+.ok{color:var(--c-mix)}.bad{color:#ff8a9a}
+#stage{padding-bottom:90px}
+</style></head>
+<body>
+<div id="stage"></div>
+<button id="fab" aria-label="ویرایشگر"></button>
+<div id="pnl" role="dialog" aria-label="ویرایشگر پست"><div class="ph-h"><b>✍️ پست‌ساز ساز و راز</b><button class="pb s" style="width:auto;margin:0;padding:4px 12px" id="x">بستن</button></div><div class="tabs" id="tabs"></div><div id="body"></div></div>
+<input type="file" id="imgf" accept="image/*" hidden>
+<script src="/assets/render.js"></script>
+<script>
+(function(){
+'use strict';
+var R=window.SRR, DBK='SR_POSTS_V1', HOMEK='SR_HOME_V1';
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function esc(s){return R.esc(s)}
+function merge(a,b){if(Array.isArray(b))return b;if(b&&typeof b==='object'&&a&&typeof a==='object'&&!Array.isArray(a)){var o={},k;for(k in a)o[k]=a[k];for(k in b)o[k]=(k in a)?merge(a[k],b[k]):b[k];return o}return b===undefined?a:b}
+function today(){return new Date().toLocaleDateString('sv-SE')}
+function newPost(){var p=clone(R.POST_DEFAULT);p._id='d'+Date.now().toString(36);p.slug='post-'+Date.now().toString(36).slice(-5);p.date=today();return p}
+
+/* ----- تنظیمات سایت (برای هدر/فوتر/رنگ‌ها) ----- */
+var S=clone(R.DEFAULTS);
+try{var h=JSON.parse(localStorage.getItem(HOMEK)||'null');if(h)S=merge(S,h)}catch(e){}
+function fixUrl(){if(/example\.com/.test(S.site.url))S.site.url=location.origin}fixUrl();
+fetch('/data/site.config.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null}).then(function(c){if(c){S=merge(clone(R.DEFAULTS),c);fixUrl();draw()}}).catch(function(){});
+
+/* ----- پیش‌نویس‌ها ----- */
+var DB={cur:'',drafts:{}};
+try{var d=JSON.parse(localStorage.getItem(DBK)||'null');if(d&&d.drafts)DB=d}catch(e){}
+var P=DB.drafts[DB.cur];if(!P){P=newPost();DB.cur=P._id;DB.drafts[P._id]=P}
+P=merge(clone(R.POST_DEFAULT),P);DB.drafts[P._id]=P;
+function save(){DB.drafts[P._id]=P;try{localStorage.setItem(DBK,JSON.stringify(DB))}catch(e){}}
+
+/* ----- پیش‌نمایش زنده ----- */
+var stage=document.getElementById('stage'),tmr;
+function draw(){
+  var ci=R.catInfo(S,P.cat);
+  document.getElementById('cfg').textContent=R.cssVars(S);
+  var fl=R.fontLink(S);document.getElementById('fontlink').href=fl||'';
+  document.body.className=(S.ui.dots?'dots ':'')+'t-'+ci.theme;
+  stage.innerHTML=R.header(S,ci.dir)+'<main class="wrap">'+R.postBody(S,P)+'</main>'+R.footer(S);
+}
+function refresh(){clearTimeout(tmr);tmr=setTimeout(function(){draw();save()},160)}
+
+/* ----- ابزار فیلد ----- */
+function get(path){return path.split('.').reduce(function(o,k){return o==null?o:o[k]},P)}
+function set(path,v){var a=path.split('.'),o=P;for(var i=0;i<a.length-1;i++)o=o[a[i]];o[a[a.length-1]]=v}
+function F(path,label,type,extra){
+  var v=get(path);v=v==null?'':v;
+  if(type==='area')return'<label class="f"><span>'+label+'</span><textarea data-p="'+path+'">'+esc(v)+'</textarea></label>';
+  if(type==='bool')return'<label class="f row"><input type="checkbox" data-p="'+path+'"'+(v!==false&&v?' checked':'')+'><span>'+label+'</span></label>';
+  if(type==='sel')return'<label class="f"><span>'+label+'</span><select data-p="'+path+'">'+extra.map(function(o){return'<option value="'+o[0]+'"'+(String(o[0])===String(v)?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>';
+  if(type==='img')return'<label class="f"><span>'+label+'</span><input type="text" class="ltr" data-p="'+path+'" value="'+esc(v)+'"></label><div class="bar"><button data-a="up" data-t="'+path+'">⬆️ آپلود تصویر از گوشی</button></div>';
+  return'<label class="f"><span>'+label+'</span><input type="'+(type||'text')+'"'+(type==='ltr'?' class="ltr"':'')+' data-p="'+path+'" value="'+esc(v)+'"></label>';
+}
+function FL(path,label,type,extra){return F(path,label,type==='ltr'?'text':type,extra).replace('<input type="text"','<input type="text" class="ltr"')}
+
+/* ----- بلوک‌ها ----- */
+var BF={
+ paragraph:[['text','متن (بین پاراگراف‌ها یک خط خالی بگذار؛ **پررنگ** و [متن](لینک) پشتیبانی می‌شود)','area']],
+ heading:[['text','عنوان'],['level','اندازه','sel',[[2,'بزرگ (H2)'],[3,'کوچک (H3)']]]],
+ image:[['src','آدرس تصویر','img'],['alt','توضیح تصویر (برای سئو و نابینایان)'],['caption','زیرنویس (اختیاری)']],
+ video:[['url','لینک ویدیوی یوتیوب'],['title','عنوان ویدیو']],
+ soundcloud:[['url','لینک آهنگ در ساندکلاد (https://soundcloud.com/...)'],['title','عنوان']],
+ audio:[['src','آدرس فایل mp3'],['title','عنوان']],
+ highlight:[['text','متن نکته','area']],
+ list:[['text','هر خط یک مورد','area']],
+ button:[['label','متن دکمه'],['href','لینک (دانلود/صفحه)'],['note','توضیح کنار دکمه']],
+ divider:[]
+};
+function blockUI(b,i){
+  var rows=(BF[b.t]||[]).map(function(f){
+    var v=b[f[0]]==null?'':b[f[0]],lab=f[1],t=f[2];
+    if(t==='area')return'<label class="f"><span>'+lab+'</span><textarea data-b="'+i+'" data-k="'+f[0]+'">'+esc(v)+'</textarea></label>';
+    if(t==='sel')return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+f[0]+'">'+f[3].map(function(o){return'<option value="'+o[0]+'"'+(+v===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>';
+    var im=t==='img'?'<div class="bar"><button data-a="up" data-t="b'+i+'.'+f[0]+'">⬆️ آپلود تصویر از گوشی</button></div>':'';
+    var ltr=/آدرس|لینک/.test(lab)?' class="ltr"':'';
+    return'<label class="f"><span>'+lab+'</span><input type="text"'+ltr+' data-b="'+i+'" data-k="'+f[0]+'" value="'+esc(v)+'"></label>'+im;
+  }).join('');
+  var sum=(b.text||b.src||b.url||b.label||'').toString().slice(0,26);
+  return'<details class="d"><summary>'+(i+1)+'. '+R.BLOCK_NAMES[b.t]+(sum?' — '+esc(sum):'')+'</summary>'+rows+
+   '<div class="bar"><button data-a="bup" data-i="'+i+'">⬆️</button><button data-a="bdn" data-i="'+i+'">⬇️</button><button data-a="bdel" data-i="'+i+'">🗑 حذف</button></div></details>';
+}
+
+/* ----- تب‌ها ----- */
+function gh(){try{return JSON.parse(localStorage.getItem('SR_GH')||'{}')}catch(e){return{}}}
+var CATSEL=[['compose','آهنگسازی و تنظیم'],['mixing','میکس و مسترینگ'],['chords','آکوردها'],['sheets','نت‌ها'],['extra','متفرقه (/blog/)']];
+var TABS={
+ posts:function(){
+  var ids=Object.keys(DB.drafts).reverse();
+  return'<button class="pb" data-a="new">➕ پست جدید</button><h4 class="g">پیش‌نویس‌های این گوشی</h4>'+
+   ids.map(function(id){var d=DB.drafts[id];return'<div class="pl"><span>'+esc(d.title||'(بدون عنوان)')+' <small>'+esc(d.slug)+(id===P._id?' ✔':'')+'</small></span><span class="bar"><button data-a="open" data-id="'+id+'">باز کردن</button><button data-a="rm" data-id="'+id+'">🗑</button></span></div>'}).join('')+
+   '<h4 class="g">پست‌های منتشرشده روی سایت</h4><button class="pb s" data-a="site">📥 دریافت فهرست از سایت</button><div id="sitelist"></div>'+
+   '<div class="note">پیش‌نویس‌ها فقط روی همین مرورگر ذخیره می‌شوند. برای ویرایش یک پست منتشرشده، از «دریافت فهرست از سایت» همان را باز کن.</div>';
+ },
+ meta:function(){
+  return F('cat','بخش (رنگ و مسیر پست از این می‌آید)','sel',CATSEL)+F('title','عنوان پست')+FL('slug','نشانی کوتاه (فقط حروف انگلیسی کوچک، عدد و -)','text')+
+   F('desc','خلاصه (زیر عنوان و توضیح گوگل)','area')+F('img','تصویر شاخص','img')+F('imgAlt','توضیح تصویر شاخص')+F('tag','برچسب (مثلاً پروژه ابلتون)')+
+   F('readTime','زمان مطالعه (خالی = خودکار)')+F('date','تاریخ انتشار','date')+F('author','نویسنده')+F('comments','بخش نظرات فعال باشد','bool');
+ },
+ blocks:function(){
+  var opts=Object.keys(R.BLOCK_NAMES).map(function(k){return'<option value="'+k+'">'+R.BLOCK_NAMES[k]+'</option>'}).join('');
+  return'<div class="f"><span>افزودن بلوک جدید</span><select id="nb">'+opts+'</select></div><button class="pb" data-a="badd">➕ افزودن به انتهای پست</button><h4 class="g">بلوک‌ها (به ترتیب)</h4>'+
+   (P.blocks.length?P.blocks.map(blockUI).join(''):'<div class="note">هنوز بلوکی نیست. از بالا اضافه کن.</div>');
+ },
+ related:function(){
+  return'<div class="note">اگر چیزی اینجا نگذاری، سایت خودش چند مطلب هم‌دسته را نشان می‌دهد.</div>'+
+   P.related.map(function(r,i){return'<details class="d"><summary>'+(i+1)+'. '+esc(r.title||'مطلب مرتبط')+'</summary>'+
+    ['title:عنوان','href:آدرس (مثلاً /compose/xxx/)','img:آدرس تصویر','desc:توضیح کوتاه'].map(function(x){var k=x.split(':');return'<label class="f"><span>'+k[1]+'</span><input type="text" data-r="'+i+'" data-k="'+k[0]+'" value="'+esc(r[k[0]]||'')+'"></label>'}).join('')+
+    '<div class="bar"><button data-a="rdel" data-i="'+i+'">🗑 حذف</button></div></details>'}).join('')+'<button class="pb s" data-a="radd">➕ مطلب مرتبط</button>';
+ },
+ seo:function(){
+  var t=(P.seo.title||P.title+' | '+S.site.name),d=P.seo.desc||P.desc,h2=P.blocks.filter(function(b){return b.t==='heading'}).length,imgs=P.blocks.filter(function(b){return b.t==='image'&&!b.alt}).length;
+  function ck(ok,txt){return'<div class="'+(ok?'ok':'bad')+'">'+(ok?'✔ ':'✖ ')+txt+'</div>'}
+  return F('seo.title','عنوان سئو (خالی = عنوان پست + نام سایت)')+F('seo.desc','توضیح متا (۱۲۰ تا ۱۶۰ حرف)','area')+F('seo.noindex','پست در گوگل نمایش داده نشود (noindex)','bool')+
+   '<h4 class="g">بررسی سئو</h4>'+ck(t.length>=20&&t.length<=65,'طول عنوان: '+t.length+' (بهتر: ۲۰ تا ۶۵)')+ck(d.length>=100&&d.length<=170,'طول توضیح: '+d.length+' (بهتر: ۱۰۰ تا ۱۷۰)')+
+   ck(!!P.img,'تصویر شاخص')+ck(h2>=2,'حداقل ۲ عنوان داخل متن ('+h2+')')+ck(imgs===0,'همهٔ تصویرها توضیح (alt) دارند')+ck(/^[a-z0-9-]{3,80}$/.test(P.slug),'نشانی کوتاه درست است')+
+   ck(S.site.url.indexOf('example.com')<0,'آدرس دامنه در تب «سایت» ساز صفحهٔ اصلی تنظیم شده');
+ },
+ publish:function(){
+  var g=gh();
+  return'<label class="f"><span>نام کاربری گیت‌هاب (یا Organization)</span><input type="text" class="ltr" id="gho" value="'+esc(g.o||'')+'"></label><label class="f"><span>نام ریپازیتوری</span><input type="text" class="ltr" id="ghr" value="'+esc(g.r||'')+'"></label><label class="f"><span>برنچ</span><input type="text" class="ltr" id="ghb" value="'+esc(g.b||'main')+'"></label><label class="f"><span>توکن (همان توکن ساز صفحهٔ اصلی)</span><input type="password" class="ltr" id="ght" value="'+esc(g.t||'')+'"></label>'+
+   '<button class="pb" data-a="pub">🚀 انتشار پست</button><button class="pb s" data-a="cats">📂 ساخت صفحهٔ همهٔ دسته‌ها (یک‌بار)</button><button class="pb dg" data-a="unpub">🗑 حذف این پست از سایت</button><button class="pb s" data-a="dl">⬇️ دانلود HTML پست</button><div id="st"></div>'+
+   '<div class="note">انتشار این‌ها را می‌نویسد: صفحهٔ پست، فایل منبع برای ویرایش بعدی، فهرست پست‌ها (برای نمایش خودکار در صفحهٔ اصلی و دسته) و نقشهٔ سایت (sitemap.xml). حدود ۳۰ ثانیه بعد روی سایت است.</div>';
+ }
+};
+var NAMES={posts:'پست‌ها',meta:'مشخصات',blocks:'محتوا',related:'مرتبط',seo:'سئو',publish:'انتشار'};
+var cur='meta',tabs=document.getElementById('tabs'),body=document.getElementById('body');
+function showTab(k){cur=k;tabs.innerHTML=Object.keys(NAMES).map(function(n){return'<button data-t="'+n+'" class="'+(n===k?'on':'')+'">'+NAMES[n]+'</button>'}).join('');body.innerHTML=TABS[k]()}
+tabs.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(b)showTab(b.dataset.t)});
+
+/* ----- رویدادها ----- */
+body.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.dataset.b!==undefined){P.blocks[+t.dataset.b][t.dataset.k]=t.dataset.k==='level'?parseInt(t.value):t.value}
+  else if(t.dataset.r!==undefined){P.related[+t.dataset.r][t.dataset.k]=t.value}
+  else if(t.dataset.p){var v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.p==='slug'){v=v.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');if(t.value!==v)t.value=v}set(t.dataset.p,v)}
+  else return;
+  refresh();
+});
+body.addEventListener('change',function(e){if(e.target.dataset.p==='cat'){draw();save()}
+  if(/^gh[ortb]$/.test(e.target.id||'')){localStorage.setItem('SR_GH',JSON.stringify({o:v('gho'),r:v('ghr'),b:v('ghb')||'main',t:v('ght')}))}});
+function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
+var upTarget='';
+body.addEventListener('click',function(e){
+  var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,i=+b.dataset.i;
+  if(a==='new'){P=newPost();DB.cur=P._id;save();draw();showTab('meta');return}
+  if(a==='open'){P=merge(clone(R.POST_DEFAULT),DB.drafts[b.dataset.id]);DB.cur=P._id;DB.drafts[P._id]=P;save();draw();showTab('meta');return}
+  if(a==='rm'){if(!confirm('این پیش‌نویس حذف شود؟ (روی سایت چیزی حذف نمی‌شود)'))return;delete DB.drafts[b.dataset.id];if(b.dataset.id===P._id){var ks=Object.keys(DB.drafts);if(ks.length)P=DB.drafts[ks[0]];else P=newPost();DB.cur=P._id;DB.drafts[P._id]=P}save();draw();showTab('posts');return}
+  if(a==='site')return loadSite();
+  if(a==='load')return loadPost(b.dataset.href);
+  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;P.blocks.push(nb)}
+  else if(a==='bdel'){if(!confirm('بلوک حذف شود؟'))return;P.blocks.splice(i,1)}
+  else if(a==='bup'||a==='bdn'){var j=a==='bup'?i-1:i+1;if(j<0||j>=P.blocks.length)return;var x=P.blocks[i];P.blocks[i]=P.blocks[j];P.blocks[j]=x}
+  else if(a==='radd')P.related.push({title:'',href:'',img:'',desc:''});
+  else if(a==='rdel')P.related.splice(i,1);
+  else if(a==='up'){upTarget=b.dataset.t;return document.getElementById('imgf').click()}
+  else if(a==='pub')return publish();
+  else if(a==='unpub')return unpublish();
+  else if(a==='cats')return ensureCats();
+  else if(a==='dl')return dl(P.slug+'.html',cleanHtml(),'text/html');
+  draw();save();showTab(cur);
+});
+
+/* ----- گیت‌هاب ----- */
+function g0(){var g={o:v('gho')||gh().o,r:v('ghr')||gh().r,b:v('ghb')||gh().b||'main',t:v('ght')||gh().t};if(!g.o||!g.r||!g.t)throw new Error('در تب «انتشار» نام کاربری، ریپازیتوری و توکن را پر کن.');localStorage.setItem('SR_GH',JSON.stringify(g));return g}
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+function ub64(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,''))))}
+function H(g){return{Authorization:'Bearer '+g.t,Accept:'application/vnd.github+json'}}
+function U(g,p){return'https://api.github.com/repos/'+g.o+'/'+g.r+'/contents/'+p.split('/').map(encodeURIComponent).join('/')}
+async function getF(g,p){var r=await fetch(U(g,p)+'?ref='+encodeURIComponent(g.b),{headers:H(g),cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error(p+' → '+r.status);return r.json()}
+async function putF(g,p,b64c,msg){
+  var cur=await getF(g,p);
+  var w=await fetch(U(g,p),{method:'PUT',headers:H(g),body:JSON.stringify({message:msg||('update '+p),content:b64c,branch:g.b,sha:cur?cur.sha:undefined})});
+  if(!w.ok)throw new Error(p+' → '+w.status+' '+((await w.json().catch(function(){return{}})).message||''));
+}
+async function delF(g,p){var cur=await getF(g,p);if(!cur)return;var w=await fetch(U(g,p),{method:'DELETE',headers:H(g),body:JSON.stringify({message:'delete '+p,sha:cur.sha,branch:g.b})});if(!w.ok)throw new Error(p+' → '+w.status)}
+function dl(n,c,m){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:m+';charset=utf-8'}));a.download=n;document.body.appendChild(a);a.click();a.remove()}
+function out(){var o=clone(P);delete o._id;return o}
+function cleanHtml(){var o=out();if(!o.date)o.date=today();return R.postHtml(S,o)}
+function log(t,add){var s=document.getElementById('st');if(s)s.textContent=add?s.textContent+'\n'+t:t}
+
+/* ----- آپلود تصویر ----- */
+document.getElementById('imgf').addEventListener('change',async function(e){
+  var f=e.target.files[0];e.target.value='';if(!f)return;
+  try{
+    var g=g0();log('کوچک‌سازی و آپلود تصویر...');
+    var blob=await shrink(f),buf=await blob.arrayBuffer(),bin='',u8=new Uint8Array(buf);for(var i=0;i<u8.length;i+=8192)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));
+    var path='assets/img/'+(P.slug||'misc')+'/'+Date.now().toString(36)+'.jpg';
+    await putF(g,path,btoa(bin),'upload '+path);
+    var url='/'+path,t=upTarget;
+    if(/^b\d+\./.test(t)){var m=/^b(\d+)\.(.+)$/.exec(t);P.blocks[+m[1]][m[2]]=url}else set(t,url);
+    save();draw();showTab(cur);alert('تصویر آپلود شد. حدود ۳۰ ثانیه بعد روی سایت دیده می‌شود.');
+  }catch(er){alert('آپلود ناموفق: '+er.message)}
+});
+function shrink(file){return new Promise(function(res){var img=new Image(),u=URL.createObjectURL(file);img.onload=function(){var r=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(function(b){URL.revokeObjectURL(u);res(b||file)},'image/jpeg',.82)};img.onerror=function(){URL.revokeObjectURL(u);res(file)};img.src=u})}
+
+/* ----- دریافت پست‌های سایت ----- */
+async function loadSite(){
+  var box=document.getElementById('sitelist');box.textContent='در حال دریافت...';
+  try{var r=await fetch('/data/posts.json',{cache:'no-store'});var d=r.ok?await r.json():{posts:[]};
+    box.innerHTML=(d.posts||[]).map(function(p){return'<div class="pl"><span>'+esc(p.title)+' <small>'+esc(p.href)+'</small></span><span class="bar"><button data-a="load" data-href="'+esc(p.href)+'">ویرایش</button></span></div>'}).join('')||'پستی منتشر نشده است.'}
+  catch(e){box.textContent='خطا در دریافت.'}
+}
+async function loadPost(h){
+  var slug=h.replace(/\/$/,'').split('/').pop();
+  try{var r=await fetch('/data/posts/'+slug+'.json',{cache:'no-store'});if(!r.ok)throw new Error('فایل منبع این پست پیدا نشد (فقط پست‌های منتشرشده با این ساز قابل ویرایش‌اند).');
+    var o=merge(clone(R.POST_DEFAULT),await r.json());o._id='d'+Date.now().toString(36);P=o;DB.cur=o._id;DB.drafts[o._id]=o;save();draw();showTab('meta')}
+  catch(e){alert(e.message)}
+}
+
+/* ----- انتشار ----- */
+function pageList(posts){
+  var u=S.site.url.replace(/\/$/,''),x=['/','/shop/'].concat(Object.keys(R.CATS).filter(function(c){return c!=='extra'}).map(function(c){return R.CATS[c].dir}));
+  var s='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+  x.forEach(function(p){s+='<url><loc>'+u+p+'</loc></url>\n'});
+  posts.forEach(function(p){s+='<url><loc>'+u+p.href+'</loc>'+(p.date?'<lastmod>'+p.date+'</lastmod>':'')+'</url>\n'});
+  return s+'</urlset>\n';
+}
+async function readPosts(g){var f=await getF(g,'data/posts.json');if(!f)return[];try{return JSON.parse(ub64(f.content)).posts||[]}catch(e){return[]}}
+async function writePosts(g,posts){
+  posts.sort(function(a,b){return String(b.date).localeCompare(String(a.date))});posts=posts.slice(0,300);
+  await putF(g,'data/posts.json',b64(JSON.stringify({posts:posts},null,1)),'update posts index');
+  await putF(g,'sitemap.xml',b64(pageList(posts)),'update sitemap');
+}
+async function publish(){
+  try{
+    var g=g0(),o=out();
+    if(!/^[a-z0-9-]{3,80}$/.test(o.slug))throw new Error('نشانی کوتاه باید ۳ تا ۸۰ حرف انگلیسی کوچک، عدد یا - باشد.');
+    if(!o.title.trim())throw new Error('عنوان پست خالی است.');
+    if(!o.date)o.date=today();o.updated=today();P.date=o.date;P.updated=o.updated;save();
+    if(S.site.url.indexOf('example.com')>=0)log('⚠ آدرس دامنه هنوز example.com است؛ در ساز صفحهٔ اصلی، تب «سایت» اصلاحش کن و دوباره منتشر کن.');
+    var ci=R.catInfo(S,o.cat),href=ci.dir+o.slug+'/',base=ci.dir.slice(1)+o.slug;
+    log('در حال انتشار...',true);
+    await putF(g,base+'/index.html',b64(R.postHtml(S,o)),'post '+o.slug);log('✓ صفحهٔ پست',true);
+    await putF(g,'data/posts/'+o.slug+'.json',b64(JSON.stringify(o,null,1)),'post source '+o.slug);log('✓ فایل منبع',true);
+    var posts=(await readPosts(g)).filter(function(p){return p.href!==href});
+    posts.push({cat:o.cat,title:o.title,desc:o.desc,img:o.img,tag:o.tag,meta:R.readMin(o),href:href,date:o.date});
+    await writePosts(g,posts);log('✓ فهرست پست‌ها و sitemap',true);
+    var ar=await getF(g,ci.dir.slice(1)+'index.html');if(!ar){await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,o.cat)),'archive '+o.cat);log('✓ صفحهٔ دستهٔ '+ci.name,true)}
+    log('\nمنتشر شد ✔ تا ~۳۰ ثانیه دیگر:\n'+S.site.url.replace(/\/$/,'')+href,true);
+  }catch(er){log('خطا: '+er.message+'\n(توکن یا نام ریپازیتوری را بررسی کن)',true)}
+}
+async function unpublish(){
+  try{
+    var g=g0(),o=out();if(!confirm('این پست از سایت حذف شود؟'))return;
+    var ci=R.catInfo(S,o.cat),href=ci.dir+o.slug+'/';log('در حال حذف...');
+    await delF(g,ci.dir.slice(1)+o.slug+'/index.html');await delF(g,'data/posts/'+o.slug+'.json');
+    var posts=(await readPosts(g)).filter(function(p){return p.href!==href});await writePosts(g,posts);
+    log('حذف شد ✔',true);
+  }catch(er){log('خطا: '+er.message,true)}
+}
+async function ensureCats(){
+  try{var g=g0();log('در حال ساخت...');
+    for(var c in R.CATS){if(c==='extra')continue;var ci=R.catInfo(S,c);await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,c)),'archive '+c);log('✓ '+ci.dir,true)}
+    log('انجام شد ✔',true)}
+  catch(er){log('خطا: '+er.message,true)}
+}
+
+/* ----- پنل ----- */
+var pnl=document.getElementById('pnl'),fab=document.getElementById('fab');
+fab.innerHTML=R.ic('sliders');
+fab.onclick=function(){pnl.classList.toggle('open')};document.getElementById('x').onclick=function(){pnl.classList.remove('open')};
+draw();showTab('meta');pnl.classList.add('open');
+})();
+</script></body></html>
