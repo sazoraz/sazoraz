@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ورود و ثبت‌نام | ساز و راز</title><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0e1118">
+<link rel="icon" href="/assets/favicon.svg">
+<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/theme.css"><style id="cfg"></style></head>
+<body class="t-chords"><a class="skip" href="#main">پرش به محتوا</a>
+<div id="hdr"></div>
+<main id="main" class="wrap">
+<div class="pg">
+<div class="pg-h"><h1>حساب کاربری</h1></div>
+<div class="box">
+<div class="tabs2" role="tablist"><button type="button" role="tab" data-t="login" aria-selected="true">ورود</button><button type="button" role="tab" data-t="register" aria-selected="false">ثبت‌نام</button><button type="button" role="tab" data-t="recover" aria-selected="false">فراموشی رمز</button></div>
+<div id="msg" class="note-msg" role="status" aria-live="polite"></div>
+<form class="fm" id="f-login" data-t="login" autocomplete="on">
+<label>نام کاربری یا ایمیل<input name="id" type="text" dir="ltr" autocomplete="username" required maxlength="100"></label>
+<label>رمز عبور<input name="password" type="password" autocomplete="current-password" required maxlength="100"></label>
+<button class="btn" type="submit">ورود</button>
+</form>
+<form class="fm" id="f-register" data-t="register" hidden autocomplete="on">
+<label>نام نمایشی<input name="name" type="text" autocomplete="name" maxlength="40"></label>
+<label>نام کاربری<input name="username" type="text" dir="ltr" autocomplete="username" required pattern="[A-Za-z0-9_]{3,20}" maxlength="20"><small>۳ تا ۲۰ حرف انگلیسی، عدد یا _</small></label>
+<label>ایمیل<input name="email" type="email" dir="ltr" autocomplete="email" required maxlength="160"></label>
+<label>رمز عبور<input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="100"><small>حداقل ۸ نویسه</small></label>
+<button class="btn" type="submit">ساخت حساب</button>
+<small>بعد از ثبت‌نام یک «کد بازیابی» شخصی می‌بینید. آن را در جای امنی ذخیره کنید؛ فقط با آن می‌توانید رمز فراموش‌شده را بازیابی کنید.</small>
+</form>
+<form class="fm" id="f-recover" data-t="recover" hidden autocomplete="off">
+<label>نام کاربری یا ایمیل<input name="id" type="text" dir="ltr" required maxlength="100"></label>
+<label>کد بازیابی<input name="code" type="text" dir="ltr" placeholder="XXXX-XXXX-XXXX-XXXX" required maxlength="30" autocapitalize="characters"></label>
+<label>رمز عبور جدید<input name="password" type="password" autocomplete="new-password" required minlength="8" maxlength="100"></label>
+<button class="btn" type="submit">تغییر رمز</button>
+<small>کد بازیابی را هم گم کرده‌اید؟ به مدیر سایت پیام بدهید تا یک رمز موقت برای شما بفرستد.</small>
+</form>
+</div></div>
+</main>
+<div id="ftr"></div>
+<noscript><p style="padding:20px;text-align:center">برای استفاده از این صفحه، جاوااسکریپت را فعال کنید.</p></noscript>
+<script src="/assets/render.js"></script>
+<script src="/assets/shell.js" data-active="/account/"></script>
+<script src="/assets/account.js" defer></script>
+</body></html>
