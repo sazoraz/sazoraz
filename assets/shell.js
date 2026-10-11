@@ -23,5 +23,9 @@
     if (f) f.outerHTML = R.footer(s);
     var c = document.createElement('script'); c.src = '/assets/core.js'; c.onload = ready; c.onerror = ready; document.body.appendChild(c);
   }
-  fetch('/data/site.config.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(go);
+  /* سرعت: پیکربندی از حافظهٔ مرورگر بلافاصله اعمال می‌شود و نسخهٔ تازه در پس‌زمینه برای دفعهٔ بعد ذخیره می‌شود */
+  var cached = null; try { cached = JSON.parse(localStorage.getItem('sr_cfg') || 'null'); } catch (e) {}
+  var net = fetch('/data/site.config.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  net.then(function (c) { if (c) try { localStorage.setItem('sr_cfg', JSON.stringify(c)); } catch (e) {} });
+  if (cached) go(cached); else net.then(go);
 })();

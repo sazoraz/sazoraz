@@ -9,7 +9,7 @@
 
   function read() { try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); return s && s.token ? s : null; } catch (e) { return null; } }
   function write(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); localStorage.removeItem(CHK); } catch (e) {} paint(); }
-  function clear() { try { localStorage.removeItem(KEY); localStorage.removeItem(CHK); } catch (e) {} paint(); }
+  function clear() { try { localStorage.removeItem(KEY); localStorage.removeItem(CHK); localStorage.removeItem('sr_panel'); } catch (e) {} paint(); }
 
   window.SR = {
     api: API,

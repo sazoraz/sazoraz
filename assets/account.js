@@ -30,6 +30,21 @@
     window.SR.login({ token: d.token, username: d.username, name: d.name });
     if (d.recovery_code) showCode(d.recovery_code, go); else go();
   }
+  /* ورود با گوگل — فقط وقتی /data/google.json شناسهٔ کلاینت داشته باشد نمایش داده می‌شود */
+  function google() {
+    fetch('/data/google.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (c) {
+      var id = c && c.clientId; if (!id || !window.SR.api) return;
+      var box = document.createElement('div'); box.style.cssText = 'margin-top:18px;display:grid;justify-items:center;gap:8px'; box.innerHTML = '<small class="muted">یا</small><div id="gbtn"></div>';
+      q('#f-login').parentNode.appendChild(box);
+      var sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true;
+      sc.onload = function () {
+        window.google.accounts.id.initialize({ client_id: id, callback: function (r) { msg(''); post('/api/google', { credential: r.credential }).then(finish, function (e) { msg(e.message); }); } });
+        window.google.accounts.id.renderButton(q('#gbtn'), { theme: 'filled_black', size: 'large', text: 'continue_with', locale: 'fa' });
+      };
+      sc.onerror = function () { box.remove(); };
+      document.head.appendChild(sc);
+    });
+  }
   function init() {
     if (window.SR.session()) return go();
     var tabs = document.querySelectorAll('.tabs2 button'), forms = document.querySelectorAll('form.fm');
@@ -48,6 +63,7 @@
         post(path, pick ? pick(body) : body).then(finish, function (er) { msg(er.message); }).then(function () { btn.disabled = false; btn.textContent = old; });
       });
     }
+    google();
     bind('f-login', '/api/login'); bind('f-register', '/api/register'); bind('f-recover', '/api/recover', function (b) { return { username: b.id, code: b.code, password: b.password }; });
   }
   window.SRReady(init);
