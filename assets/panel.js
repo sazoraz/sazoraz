@@ -134,7 +134,7 @@
     ts.forEach(function (t) {
       var b = el('button', 'mi' + (t.unread ? ' unread' : '') + (S.thread === t.id ? ' act' : '')); b.type = 'button';
       var top = el('div', 'mi-t'); top.appendChild(el('b', null, t.subject)); top.appendChild(el('small', null, fd(t.last.created))); b.appendChild(top);
-      var sn = el('div', 'mi-s'); sn.appendChild(el('span', 'mi-k', t.bc ? 'اعلان' : (t.last.dir ? 'شما' : 'استودیو'))); sn.appendChild(document.createTextNode(' ' + t.last.body.slice(0, 70))); b.appendChild(sn);
+      var sn = el('div', 'mi-s'); sn.appendChild(el('span', 'mi-k', t.bc ? 'اعلان' : (t.last.dir ? 'شما' : 'پشتیبانی'))); sn.appendChild(document.createTextNode(' ' + t.last.body.slice(0, 70))); b.appendChild(sn);
       if (t.unread) b.appendChild(el('i', 'mi-dot'));
       b.onclick = function () { openThread(t.id); }; lp.appendChild(b);
     });
@@ -148,7 +148,7 @@
   function threadView(t) {
     var w = el('div', 'tv'), h = el('div', 'tv-h'); h.appendChild(backBtn()); h.appendChild(el('h3', null, t.subject)); w.appendChild(h);
     var l = el('div', 'tv-l');
-    t.msgs.forEach(function (m) { var b = el('div', 'bb ' + (m.dir ? 'me' : 'ad')); b.appendChild(el('small', null, (t.bc ? 'اعلان همگانی' : m.dir ? 'شما' : 'استودیو') + ' · ' + ft(m.created))); b.appendChild(el('p', null, m.body)); l.appendChild(b); });
+    t.msgs.forEach(function (m) { var b = el('div', 'bb ' + (m.dir ? 'me' : 'ad')); b.appendChild(el('small', null, (t.bc ? 'اعلان همگانی' : m.dir ? 'شما' : 'پشتیبانی') + ' · ' + ft(m.created))); b.appendChild(el('p', null, m.body)); l.appendChild(b); });
     w.appendChild(l);
     if (!t.bc) {
       var f = el('form', 'fm tv-f'), ta = el('textarea'); ta.rows = 3; ta.maxLength = 1500; ta.placeholder = 'پاسخ شما...'; ta.value = S.draft.reply[t.id] || ''; ta.oninput = function () { S.draft.reply[t.id] = ta.value; };
@@ -165,7 +165,7 @@
     return w;
   }
   function composer() {
-    var w = el('div', 'tv'), h = el('div', 'tv-h'); h.appendChild(backBtn()); h.appendChild(el('h3', null, 'پیام جدید به استودیو')); w.appendChild(h);
+    var w = el('div', 'tv'), h = el('div', 'tv-h'); h.appendChild(backBtn()); h.appendChild(el('h3', null, 'ارسال پیام به پشتیبانی')); w.appendChild(h);
     var f = el('form', 'fm tv-f'), l1 = el('label', null, 'موضوع'), si = el('input'), l2 = el('label', null, 'متن پیام'), ta = el('textarea');
     si.maxLength = 80; si.value = S.draft.subject; si.oninput = function () { S.draft.subject = si.value; }; ta.rows = 6; ta.maxLength = 1500; ta.value = S.draft.body; ta.oninput = function () { S.draft.body = ta.value; };
     l1.appendChild(si); l2.appendChild(ta);
@@ -181,13 +181,13 @@
     w.appendChild(f); return w;
   }
   function side() {
-    var w = el('aside', 'pn-side'), b = el('section', 'box'); b.appendChild(el('h2', null, 'آخرین پیام‌ها'));
-    var ts = S.d ? threads().slice(0, 3) : [];
-    if (!ts.length) b.appendChild(el('p', 'muted', S.d ? 'پیامی ندارید.' : '...'));
+    var w = el('aside', 'pn-side'), b = el('section', 'box'); b.appendChild(el('h2', null, 'تابلو اعلانات'));
+    var ts = S.d ? threads().filter(function (t) { return t.bc; }).slice(0, 3) : [];
+    if (!ts.length) b.appendChild(el('p', 'muted', S.d ? 'اعلان تازه‌ای نیست.' : '...'));
     ts.forEach(function (t) { var r = el('button', 'pn-sm' + (t.unread ? ' unread' : '')); r.type = 'button'; r.appendChild(el('b', null, t.subject)); r.appendChild(el('small', 'muted', t.last.body.slice(0, 50))); r.onclick = function () { S.tab = 'messages'; try { history.replaceState(null, '', '#messages'); } catch (e) {} openThread(t.id); }; b.appendChild(r); });
     w.appendChild(b);
     var s = el('section', 'box pn-help'); s.appendChild(el('h2', null, 'نیاز به کمک دارید؟')); s.appendChild(el('p', 'muted', 'سؤال یا مشکلتان را برای ما بنویسید؛ پاسخ در همین پنل می‌آید.'));
-    s.appendChild(btn('btn', 'ارسال پیام', 'send', function () { S.tab = 'messages'; S.compose = true; S.thread = null; render(); })); w.appendChild(s);
+    s.appendChild(btn('btn', 'ارسال پیام به پشتیبانی', 'send', function () { S.tab = 'messages'; S.compose = true; S.thread = null; render(); })); w.appendChild(s);
     return w;
   }
 

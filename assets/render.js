@@ -93,11 +93,11 @@
       }
     ],
     banner: {
-      on: true, icon: 'forum', title: 'آهنگساز یا تنظیم‌کننده مستقل هستید؟',
+      on: true, mode: 'text', img: '', code: '', height: 260, icon: 'forum', title: 'آهنگساز یا تنظیم‌کننده مستقل هستید؟',
       text: 'آثار و سمپل‌های خودتان را در فروشگاه ساز و راز با حفظ کپی‌رایت منتشر کنید.', btn: 'ثبت‌نام هنرمند', href: '/account/?mode=register'
     },
     footer: {
-      title: 'تابلو اعلانات استودیو', sub: 'فراخوان‌ها، دوره‌ها و به‌روزرسانی‌های ماهانه',
+      title: 'تابلو اعلانات', sub: 'فراخوان‌ها، دوره‌ها و به‌روزرسانی‌های ماهانه',
       about: 'ساز و راز؛ جایی برای ساختن، شنیدن و یاد گرفتن موسیقی.',
       copyright: '© ۱۴۰۵ تمامی حقوق برای استودیو ساز و راز محفوظ است.',
       ann: [
@@ -195,11 +195,17 @@
       '<div class="quick">' + quick + '</div></section>';
   }
 
+  function sandbox(code, h, title, extra) {
+    var d = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;min-height:100%;background:transparent;color:#f4f3f7;font-family:system-ui,Tahoma,sans-serif}' + (extra || '') + '</style>' + code;
+    return '<iframe sandbox="allow-scripts allow-popups" loading="lazy" title="' + esc(title || 'محتوای تعاملی') + '" style="height:' + Math.max(60, Math.min(1200, parseInt(h) || 260)) + 'px" srcdoc="' + esc(d) + '"></iframe>';
+  }
   function banner(s) {
     var b = s.banner;
     if (!b.on) return '';
-    return '<section class="banner"><div class="l"><span class="logo">' + ic(b.icon) + '</span><div><h3>' + esc(b.title) + '</h3><p>' + esc(b.text) + '</p></div></div>' +
-      '<a class="btn" href="' + esc(href(b.href)) + '">' + esc(b.btn) + ic('arrow') + '</a></section>';
+    if (b.mode === 'html') return b.code ? '<section class="banner-x">' + sandbox(b.code, b.height, b.title) + '</section>' : '';
+    var vis = (b.mode === 'image' && b.img) ? '<img class="bimg" src="' + esc(href(b.img)) + '" alt="' + esc(b.title) + '" loading="lazy">' : '<span class="logo">' + ic(b.icon) + '</span>';
+    return '<section class="banner' + (b.mode === 'image' ? ' has-img' : '') + '"><div class="l">' + vis + '<div><h3>' + esc(b.title) + '</h3><p>' + esc(b.text) + '</p></div></div>' +
+      (b.btn ? '<a class="btn" href="' + esc(href(b.href)) + '">' + esc(b.btn) + ic('arrow') + '</a>' : '') + '</section>';
   }
 
   function main(s) { return hero(s) + s.sections.map(section).join('') + banner(s); }
@@ -241,8 +247,8 @@
     sheets: { theme: 'sheets', name: 'نت‌ها', dir: '/sheets/' },
     extra: { theme: 'extra', name: 'متفرقه', dir: '/blog/' }
   };
-  var POST_DEFAULT = { slug: '', cat: 'compose', title: '', desc: '', img: '', imgAlt: '', tag: '', readTime: '', date: '', updated: '', author: 'ساز و راز', comments: true, blocks: [], related: [], seo: { title: '', desc: '', noindex: false } };
-  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده' };
+  var POST_DEFAULT = { slug: '', cat: 'compose', title: '', desc: '', img: '', imgAlt: '', tag: '', readTime: '', date: '', updated: '', author: 'ساز و راز', comments: true, blocks: [], related: [], align: 'justify', seo: { title: '', desc: '', noindex: false, kw: '' } };
+  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده', aparat: 'ویدیوی آپارات', lottie: 'انیمیشن لوتی (Lottie)', embed: 'انیمیشن / کد HTML-CSS-JS', anchors: 'لنگر (فهرست پیوند به بلوک‌ها)' };
   function catInfo(s, cat) {
     var c = CATS[cat] || CATS.extra, sec = (s.sections || []).filter(function (x) { return x.auto === cat; })[0];
     return { theme: c.theme, dir: c.dir, name: (sec && sec.short) || c.name };
@@ -263,15 +269,30 @@
   }
   function readMin(p) { return p.readTime ? p.readTime : Math.max(1, Math.ceil(words(p) / 170)) + ' دقیقه مطالعه'; }
   function faDate(d) { try { return d ? new Date(d + 'T12:00:00').toLocaleDateString('fa-IR') : ''; } catch (e) { return ''; } }
-  function blockHtml(b, i) {
+  function apId(u) {
+    u = String(u || '').trim(); var m = /aparat\.com\/(?:v\/|video\/video\/embed\/videohash\/)([A-Za-z0-9]+)/.exec(u);
+    return m ? m[1] : (/^[A-Za-z0-9]{4,12}$/.test(u) ? u : '');
+  }
+  function blabel(b) {
+    if (b.alabel) return b.alabel;
+    var t = b.text || b.title || b.label || ''; t = String(t).split('\n')[0].replace(/\*\*/g, '').trim();
+    return t ? t.slice(0, 48) : (BLOCK_NAMES[b.t] || 'بخش');
+  }
+  function blockHtml(b, i, all) {
     switch (b.t) {
       case 'paragraph': return (b.text || '').split(/\n{2,}/).filter(function (x) { return x.trim(); }).map(function (x) { return '<p>' + inline(x.trim()) + '</p>'; }).join('');
       case 'heading': var l = b.level === 3 ? 3 : 2; return '<h' + l + ' id="h' + i + '">' + esc(b.text) + '</h' + l + '>';
       case 'image': return b.src ? '<figure class="fig"><img src="' + esc(href(b.src)) + '" alt="' + esc(b.alt || b.caption || '') + '" loading="lazy" decoding="async">' + (b.caption ? '<figcaption>' + esc(b.caption) + '</figcaption>' : '') + '</figure>' : '';
       case 'video': var id = ytId(b.url); return id ? '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + id + '" title="' + esc(b.title || 'ویدیو') + '" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' : '';
       case 'soundcloud': return /^https:\/\/soundcloud\.com\//.test(b.url || '') ? '<div class="sc"><iframe src="https://w.soundcloud.com/player/?url=' + encodeURIComponent(b.url) + '&color=%23ff9770&hide_related=true&show_comments=false" title="' + esc(b.title || 'SoundCloud') + '" loading="lazy"></iframe></div>' : '';
-      case 'audio': return b.src ? '<div class="aud">' + (b.title ? '<b>' + esc(b.title) + '</b>' : '') + '<audio controls preload="none" src="' + esc(href(b.src)) + '"></audio></div>' : '';
-      case 'highlight': return '<aside class="hl-box">' + inline(b.text || '') + '</aside>';
+      case 'aparat': var ai = apId(b.url); return ai ? '<div class="vid"><iframe src="https://www.aparat.com/video/video/embed/videohash/' + ai + '/vt/frame" title="' + esc(b.title || 'ویدیو آپارات') + '" loading="lazy" allowfullscreen></iframe></div>' : '';
+      case 'embed': return b.code ? '<div class="emb">' + sandbox(b.code, b.height, b.title) + '</div>' : '';
+      case 'lottie': return /^https:\/\//.test(b.url || '') ? '<div class="emb">' + sandbox('<script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"><\/script><lottie-player src="' + esc(b.url) + '" background="transparent" speed="1" style="width:100%;height:100%" loop autoplay></lottie-player>', b.height || 280, b.title || 'انیمیشن', 'html,body{height:100%}') + '</div>' : '';
+      case 'anchors':
+        var its = (b.targets || []).map(function (id) { var t = (all || []).filter(function (x) { return x.id === id; })[0]; return t ? '<li><a href="#a-' + esc(id) + '">' + esc(blabel(t)) + '</a></li>' : ''; }).join('');
+        return its ? '<nav class="anc" aria-label="' + esc(b.title || 'پیوندهای این صفحه') + '"><b>' + ic('arrow') + esc(b.title || 'پرش سریع به بخش‌ها') + '</b><ul>' + its + '</ul></nav>' : '';
+      case 'audio': return b.src ? '<div class="aud"><span class="aud-i">' + ic('play') + '</span><div class="aud-b">' + (b.title ? '<b>' + esc(b.title) + '</b>' : '') + '<audio controls preload="none" src="' + esc(href(b.src)) + '"></audio></div>' + (b.dl ? '<a class="aud-d" href="' + esc(href(b.src)) + '" download rel="noopener">دانلود</a>' : '') + '</div>' : '';
+      case 'highlight': return '<aside class="hl-box"><span class="hl-t">' + ic('bolt') + esc(b.label || 'نکتهٔ مهم') + '</span><div>' + inline(b.text || '') + '</div></aside>';
       case 'list': return '<ul>' + (b.text || '').split('\n').filter(function (x) { return x.trim(); }).map(function (x) { return '<li>' + inline(x.trim()) + '</li>'; }).join('') + '</ul>';
       case 'button': return '<p><a class="btn" href="' + esc(href(b.href)) + '" rel="noopener">' + ic('arrow') + esc(b.label || 'دانلود') + '</a>' + (b.note ? ' <small class="muted">' + esc(b.note) + '</small>' : '') + '</p>';
       case 'divider': return '<hr class="dv">';
@@ -281,8 +302,9 @@
   function relCard(r) {
     return '<article class="card"><div class="thumb">' + (r.img ? '<img src="' + esc(href(r.img)) + '" alt="' + esc(r.title) + '" loading="lazy" decoding="async">' : '<div class="ph"></div>') + '</div><div class="card-b"><h3><a class="stretch" href="' + esc(href(r.href)) + '">' + esc(r.title) + '</a></h3>' + (r.desc ? '<p>' + esc(r.desc) + '</p>' : '') + '</div><span class="cta">مشاهده</span></article>';
   }
-  function postBody(s, p) {
-    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); return blockHtml(b, i); }).join('');
+  function postBody(s, p, opt) {
+    var tg = {}; (p.blocks || []).forEach(function (b) { if (b.t === 'anchors') (b.targets || []).forEach(function (id) { tg[id] = 1; }); });
+    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); var h = blockHtml(b, i, p.blocks); return (b.id && tg[b.id] && h) ? '<div class="atg" id="a-' + esc(b.id) + '">' + h + '</div>' : h; }).join('');
     var toc = heads.length >= 3 ? '<nav class="toc" aria-label="فهرست مطالب"><b>فهرست مطالب</b><ol>' + heads.map(function (h) { return '<li' + (h.l === 3 ? ' style="margin-right:16px;opacity:.85"' : '') + '><a href="#' + h.id + '">' + esc(h.text) + '</a></li>'; }).join('') + '</ol></nav>' : '';
     var meta = [faDate(p.date), readMin(p), p.author].filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
     var rel = (p.related || []).filter(function (r) { return r.title && r.href; });
@@ -290,15 +312,15 @@
       '<nav class="crumbs" aria-label="مسیر صفحه"><a href="/">خانه</a><span>›</span><a href="' + ci.dir + '">' + esc(ci.name) + '</a><span>›</span><span>' + esc(p.title) + '</span></nav>' +
       '<header class="art-h">' + (p.tag ? '<span class="chip">' + esc(p.tag) + '</span>' : '') + '<h1>' + esc(p.title) + '</h1>' + (p.desc ? '<p class="lead">' + esc(p.desc) + '</p>' : '') + '<div class="art-meta">' + meta + '</div></header>' +
       (p.img ? '<figure class="cover"><img src="' + esc(href(p.img)) + '" alt="' + esc(p.imgAlt || p.title) + '" fetchpriority="high" decoding="async"></figure>' : '') +
-      toc + '<div class="prose">' + bodyHtml + '</div>' +
+      toc + '<div class="prose' + (p.align === 'right' ? '' : ' j') + '">' + bodyHtml + '</div>' +
       '<div class="art-foot"><button class="btn btn-w" type="button" data-share>' + ic('arrow') + 'اشتراک‌گذاری</button><a class="btn btn-dark" href="' + ci.dir + '">بیشتر در ' + esc(ci.name) + '</a></div></article>' +
       '<section class="related" data-cat="' + esc(p.cat) + '" data-slug="' + esc(p.slug) + '" data-manual="' + (rel.length ? 1 : 0) + '"' + (rel.length ? '' : ' hidden') + '><h2>مطالب مرتبط</h2><div class="grid v">' + rel.map(relCard).join('') + '</div></section>' +
-      (p.comments !== false ? '<section class="box cm" id="comments" data-post="' + esc(p.slug) + '"><h2>نظرات</h2><div id="cm-list" class="list"><div class="muted">در حال بارگذاری نظرات...</div></div><div id="cm-form"></div></section>' : '') + '</div>';
+      (p.comments !== false ? '<section class="box cm" id="comments" data-post="' + esc(p.slug) + '"><h2>نظرات</h2>' + (opt && opt.preview ? '<div class="list"><div class="li"><div><b>نمونه</b><small class="muted"> · امروز</small><p>اینجا نظرهای تأییدشدهٔ کاربران نمایش داده می‌شود. (پیش‌نمایش)</p></div></div></div><a class="btn" href="#comments">برای ثبت نظر وارد شوید</a>' : '<div id="cm-list" class="list"><div class="muted">در حال بارگذاری نظرات...</div></div><div id="cm-form"></div>') + '</section>' : '') + '</div>';
   }
   function postJsonLd(s, p) {
     var ci = catInfo(s, p.cat), u = s.site.url.replace(/\/$/, ''), url = postUrl(s, p);
     var art = { '@type': 'Article', headline: p.title, description: p.seo && p.seo.desc || p.desc, inLanguage: 'fa-IR', mainEntityOfPage: url, author: { '@type': 'Person', name: p.author || s.site.name }, publisher: { '@type': 'Organization', name: s.site.name, logo: { '@type': 'ImageObject', url: absUrl(s, s.site.favicon) } } };
-    if (p.img) art.image = [absUrl(s, p.img)]; if (p.date) art.datePublished = p.date; art.dateModified = p.updated || p.date || undefined;
+    art.wordCount = words(p); art.articleSection = ci.name; var kw = (p.seo && p.seo.kw) || p.tag; if (kw) art.keywords = kw; if (p.img) art.image = [absUrl(s, p.img)]; if (p.date) art.datePublished = p.date; art.dateModified = p.updated || p.date || undefined;
     var bc = { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'خانه', item: u + '/' }, { '@type': 'ListItem', position: 2, name: ci.name, item: u + ci.dir }, { '@type': 'ListItem', position: 3, name: p.title, item: url }] };
     return JSON.stringify({ '@context': 'https://schema.org', '@graph': [art, bc] }).replace(/</g, '\\u003c');
   }
@@ -310,7 +332,7 @@
       '<link rel="canonical" href="' + esc(url) + '"><meta name="robots" content="' + (seo.noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large') + '">' +
       '<meta name="theme-color" content="' + esc(s.ui.bg) + '"><meta name="sr-api" content="' + esc(s.site.api) + '">' +
       '<meta property="og:type" content="article"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="' + esc(s.site.name) + '"><meta property="og:title" content="' + esc(ttl) + '"><meta property="og:description" content="' + esc(dsc) + '"><meta property="og:url" content="' + esc(url) + '">' +
-      (img ? '<meta property="og:image" content="' + esc(img) + '"><meta name="twitter:image" content="' + esc(img) + '">' : '') + (p.date ? '<meta property="article:published_time" content="' + esc(p.date) + '">' : '') +
+      (img ? '<meta property="og:image" content="' + esc(img) + '"><meta name="twitter:image" content="' + esc(img) + '">' : '') + (p.date ? '<meta property="article:published_time" content="' + esc(p.date) + '">' : '') + '<meta property="article:modified_time" content="' + esc(p.updated || p.date || '') + '"><meta property="article:section" content="' + esc(ci.name) + '"><meta name="author" content="' + esc(p.author || s.site.name) + '">' + (img ? '<meta property="og:image:alt" content="' + esc(p.imgAlt || p.title) + '">' : '') + (seo.kw ? '<meta name="keywords" content="' + esc(seo.kw) + '">' : '') +
       '<meta name="twitter:card" content="summary_large_image"><link rel="icon" href="' + esc(s.site.favicon) + '">' +
       '<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' + (fl ? '<link rel="stylesheet" href="' + esc(fl) + '">' : '') +
       '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg">' + cssVars(s) + '</style><script type="application/ld+json">' + postJsonLd(s, p) + '</script></head>' +
@@ -328,5 +350,5 @@
       '<script src="/assets/render.js"></script><script src="/assets/shell.js" data-active="' + esc(ci.dir) + '"></script><script src="/assets/archive.js" defer></script></body></html>';
   }
 
-  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId };
+  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, apId: apId, blabel: blabel };
 });
