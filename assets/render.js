@@ -278,6 +278,16 @@
     var t = b.text || b.title || b.label || ''; t = String(t).split('\n')[0].replace(/\*\*/g, '').trim();
     return t ? t.slice(0, 48) : (BLOCK_NAMES[b.t] || 'بخش');
   }
+  function wrapBlock(b, h) {
+    if (!h) return h; var c = [];
+    if (/^(right|center|left|justify)$/.test(b.align || '')) c.push('a-' + b.align);
+    if (/^(lg|md|sm)$/.test(b.w || '')) c.push('w-' + b.w);
+    if (/^(right|center|left|justify)$/.test(b.alignD || '')) c.push('d-a-' + b.alignD);
+    if (/^(full|lg|md|sm)$/.test(b.wD || '')) c.push('d-w-' + b.wD);
+    if (/^(right|center|left|justify)$/.test(b.alignM || '')) c.push('m-a-' + b.alignM);
+    if (/^(full|lg|md|sm)$/.test(b.wM || '')) c.push('m-w-' + b.wM);
+    return c.length ? '<div class="bw ' + c.join(' ') + '">' + h + '</div>' : h;
+  }
   function blockHtml(b, i, all) {
     switch (b.t) {
       case 'paragraph': return (b.text || '').split(/\n{2,}/).filter(function (x) { return x.trim(); }).map(function (x) { return '<p>' + inline(x.trim()) + '</p>'; }).join('');
@@ -304,7 +314,7 @@
   }
   function postBody(s, p, opt) {
     var tg = {}; (p.blocks || []).forEach(function (b) { if (b.t === 'anchors') (b.targets || []).forEach(function (id) { tg[id] = 1; }); });
-    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); var h = blockHtml(b, i, p.blocks); return (b.id && tg[b.id] && h) ? '<div class="atg" id="a-' + esc(b.id) + '">' + h + '</div>' : h; }).join('');
+    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); var h = wrapBlock(b, blockHtml(b, i, p.blocks)); return (b.id && tg[b.id] && h) ? '<div class="atg" id="a-' + esc(b.id) + '">' + h + '</div>' : h; }).join('');
     var toc = heads.length >= 3 ? '<nav class="toc" aria-label="فهرست مطالب"><b>فهرست مطالب</b><ol>' + heads.map(function (h) { return '<li' + (h.l === 3 ? ' style="margin-right:16px;opacity:.85"' : '') + '><a href="#' + h.id + '">' + esc(h.text) + '</a></li>'; }).join('') + '</ol></nav>' : '';
     var meta = [faDate(p.date), readMin(p), p.author].filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
     var rel = (p.related || []).filter(function (r) { return r.title && r.href; });
