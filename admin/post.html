@@ -64,12 +64,14 @@ function save(){DB.drafts[P._id]=P;try{localStorage.setItem(DBK,JSON.stringify(D
 
 /* ----- پیش‌نمایش زنده ----- */
 var stage=document.getElementById('stage'),tmr;
+function bid(){return 'k'+Math.random().toString(36).slice(2,7)}
 function draw(){
+  P.blocks.forEach(function(b){if(!b.id)b.id=bid()});
   var ci=R.catInfo(S,P.cat);
   document.getElementById('cfg').textContent=R.cssVars(S);
   var fl=R.fontLink(S);document.getElementById('fontlink').href=fl||'';
   document.body.className=(S.ui.dots?'dots ':'')+'t-'+ci.theme;
-  stage.innerHTML=R.header(S,ci.dir)+'<main class="wrap">'+R.postBody(S,P)+'</main>'+R.footer(S);
+  stage.innerHTML=R.header(S,ci.dir)+'<main class="wrap">'+R.postBody(S,P,{preview:true})+'</main>'+R.footer(S);
 }
 function refresh(){clearTimeout(tmr);tmr=setTimeout(function(){draw();save()},160)}
 
@@ -93,8 +95,12 @@ var BF={
  image:[['src','آدرس تصویر','img'],['alt','توضیح تصویر (برای سئو و نابینایان)'],['caption','زیرنویس (اختیاری)']],
  video:[['url','لینک ویدیوی یوتیوب'],['title','عنوان ویدیو']],
  soundcloud:[['url','لینک آهنگ در ساندکلاد (https://soundcloud.com/...)'],['title','عنوان']],
- audio:[['src','آدرس فایل mp3'],['title','عنوان']],
- highlight:[['text','متن نکته','area']],
+ audio:[['src','آدرس فایل mp3'],['title','عنوان'],['dl','نمایش دکمهٔ دانلود','bool']],
+ aparat:[['url','لینک ویدیو در آپارات (aparat.com/v/...) یا کد iframe آن'],['title','عنوان ویدیو']],
+ lottie:[['url','آدرس فایل لوتی (https — فرمت .json یا .lottie)'],['height','ارتفاع (px)','num'],['title','عنوان (برای دسترسی‌پذیری)']],
+ embed:[['code','کد کامل HTML / CSS / JavaScript (انیمیشن، Hyperframes، GSAP و ...)','code'],['height','ارتفاع (px)','num'],['title','عنوان (برای دسترسی‌پذیری)']],
+ anchors:[['title','عنوان کادر (خالی = پرش سریع به بخش‌ها)']],
+ highlight:[['label','عنوان کادر (خالی = نکتهٔ مهم)'],['text','متن نکته','area']],
  list:[['text','هر خط یک مورد','area']],
  button:[['label','متن دکمه'],['href','لینک (دانلود/صفحه)'],['note','توضیح کنار دکمه']],
  divider:[]
@@ -103,12 +109,20 @@ function blockUI(b,i){
   var rows=(BF[b.t]||[]).map(function(f){
     var v=b[f[0]]==null?'':b[f[0]],lab=f[1],t=f[2];
     if(t==='area')return'<label class="f"><span>'+lab+'</span><textarea data-b="'+i+'" data-k="'+f[0]+'">'+esc(v)+'</textarea></label>';
+    if(t==='code')return'<label class="f"><span>'+lab+'</span><textarea class="ltr" dir="ltr" spellcheck="false" style="min-height:200px;font-family:monospace;font-size:12px" data-b="'+i+'" data-k="'+f[0]+'">'+esc(v)+'</textarea></label>';
+    if(t==='bool')return'<label class="f row"><input type="checkbox" data-b="'+i+'" data-k="'+f[0]+'"'+(v?' checked':'')+'><span>'+lab+'</span></label>';
     if(t==='sel')return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+f[0]+'">'+f[3].map(function(o){return'<option value="'+o[0]+'"'+(+v===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>';
     var im=t==='img'?'<div class="bar"><button data-a="up" data-t="b'+i+'.'+f[0]+'">⬆️ آپلود تصویر از گوشی</button></div>':'';
     var ltr=/آدرس|لینک/.test(lab)?' class="ltr"':'';
     return'<label class="f"><span>'+lab+'</span><input type="text"'+ltr+' data-b="'+i+'" data-k="'+f[0]+'" value="'+esc(v)+'"></label>'+im;
   }).join('');
-  var sum=(b.text||b.src||b.url||b.label||'').toString().slice(0,26);
+  if(b.t!=='divider'&&b.t!=='anchors')rows+='<label class="f"><span>نام این بلوک در لنگر (اختیاری؛ خالی = خودکار)</span><input type="text" data-b="'+i+'" data-k="alabel" value="'+esc(b.alabel||'')+'"></label>';
+  if(b.t==='anchors'){
+    rows+='<div class="f"><span>این بلوک‌ها در فهرست لنگر بیایند (با کلیک روی هر مورد، صفحه به همان بلوک می‌رود):</span></div>'+P.blocks.map(function(x,j){
+      if(x.t==='anchors'||x.t==='divider')return'';
+      return'<label class="f row"><input type="checkbox" data-anc="'+i+'" data-tid="'+x.id+'"'+((b.targets||[]).indexOf(x.id)>=0?' checked':'')+'><span>'+(j+1)+'. '+esc(R.blabel(x))+'</span></label>'}).join('');
+  }
+  var sum=(b.text||b.src||b.url||b.label||b.title||'').toString().slice(0,26);
   return'<details class="d"><summary>'+(i+1)+'. '+R.BLOCK_NAMES[b.t]+(sum?' — '+esc(sum):'')+'</summary>'+rows+
    '<div class="bar"><button data-a="bup" data-i="'+i+'">⬆️</button><button data-a="bdn" data-i="'+i+'">⬇️</button><button data-a="bdel" data-i="'+i+'">🗑 حذف</button></div></details>';
 }
@@ -127,7 +141,7 @@ var TABS={
  meta:function(){
   return F('cat','بخش (رنگ و مسیر پست از این می‌آید)','sel',CATSEL)+F('title','عنوان پست')+FL('slug','نشانی کوتاه (فقط حروف انگلیسی کوچک، عدد و -)','text')+
    F('desc','خلاصه (زیر عنوان و توضیح گوگل)','area')+F('img','تصویر شاخص','img')+F('imgAlt','توضیح تصویر شاخص')+F('tag','برچسب (مثلاً پروژه ابلتون)')+
-   F('readTime','زمان مطالعه (خالی = خودکار)')+F('date','تاریخ انتشار','date')+F('author','نویسنده')+F('comments','بخش نظرات فعال باشد','bool');
+   F('readTime','زمان مطالعه (خالی = خودکار)')+F('date','تاریخ انتشار','date')+F('author','نویسنده')+F('align','چینش متن پاراگراف‌ها','sel',[['justify','دوطرفه (Justify)'],['right','راست‌چین']])+F('comments','بخش نظرات فعال باشد','bool');
  },
  blocks:function(){
   var opts=Object.keys(R.BLOCK_NAMES).map(function(k){return'<option value="'+k+'">'+R.BLOCK_NAMES[k]+'</option>'}).join('');
@@ -143,10 +157,24 @@ var TABS={
  seo:function(){
   var t=(P.seo.title||P.title+' | '+S.site.name),d=P.seo.desc||P.desc,h2=P.blocks.filter(function(b){return b.t==='heading'}).length,imgs=P.blocks.filter(function(b){return b.t==='image'&&!b.alt}).length;
   function ck(ok,txt){return'<div class="'+(ok?'ok':'bad')+'">'+(ok?'✔ ':'✖ ')+txt+'</div>'}
-  return F('seo.title','عنوان سئو (خالی = عنوان پست + نام سایت)')+F('seo.desc','توضیح متا (۱۲۰ تا ۱۶۰ حرف)','area')+F('seo.noindex','پست در گوگل نمایش داده نشود (noindex)','bool')+
+  return F('seo.kw','کلمهٔ کلیدی اصلی (فقط یک عبارت)')+F('seo.title','عنوان سئو (خالی = عنوان پست + نام سایت)')+F('seo.desc','توضیح متا (۱۲۰ تا ۱۶۰ حرف)','area')+F('seo.noindex','پست در گوگل نمایش داده نشود (noindex)','bool')+
    '<h4 class="g">بررسی سئو</h4>'+ck(t.length>=20&&t.length<=65,'طول عنوان: '+t.length+' (بهتر: ۲۰ تا ۶۵)')+ck(d.length>=100&&d.length<=170,'طول توضیح: '+d.length+' (بهتر: ۱۰۰ تا ۱۷۰)')+
    ck(!!P.img,'تصویر شاخص')+ck(h2>=2,'حداقل ۲ عنوان داخل متن ('+h2+')')+ck(imgs===0,'همهٔ تصویرها توضیح (alt) دارند')+ck(/^[a-z0-9-]{3,80}$/.test(P.slug),'نشانی کوتاه درست است')+
+   (function(){var k=(P.seo.kw||'').trim();if(!k)return'<div class="note">کلمهٔ کلیدی را بنویس تا بررسی‌های بیشتری انجام شود.</div>';
+     var fp=(P.blocks.filter(function(b){return b.t==='paragraph'})[0]||{}).text||'',hs=P.blocks.filter(function(b){return b.t==='heading'}).map(function(b){return b.text}).join(' ');
+     var wc=P.blocks.reduce(function(n,b){return n+((b.text||'').split(/\s+/).length)},0),inl=P.blocks.filter(function(b){return /\]\((\/|https?:)/.test(b.text||'')}).length;
+     return ck(t.indexOf(k)>=0,'کلمه در عنوان سئو')+ck(d.indexOf(k)>=0,'کلمه در توضیح متا')+ck(fp.indexOf(k)>=0,'کلمه در پاراگراف اول')+ck(hs.indexOf(k)>=0,'کلمه در یکی از عنوان‌های داخل متن')+ck(wc>=300,'حجم متن حدود '+wc+' کلمه (بهتر: بیش از ۳۰۰)')+ck(inl>=1,'حداقل یک لینک داخل متن')})()+
    ck(S.site.url.indexOf('example.com')<0,'آدرس دامنه در تب «سایت» ساز صفحهٔ اصلی تنظیم شده');
+ },
+ ai:function(){
+  var a=aiCfg();
+  return'<div class="note">متن خام را از سایت دیگرت اینجا بچسبان؛ هوش مصنوعی آن را به بلوک‌های همین پست‌ساز (عنوان، پاراگراف، فهرست، نکتهٔ مهم، ...) تقسیم می‌کند و عنوان/توضیح/کلمهٔ کلیدی سئو را هم پر می‌کند. متن را بازنویسی نمی‌کند. آدرس و کلید فقط در همین مرورگر ذخیره می‌شوند.</div>'+
+   '<label class="f"><span>آدرس API (Base URL، سازگار با OpenAI — مثلاً https://example.com/v1)</span><input type="text" class="ltr" id="ai_base" value="'+esc(a.base||'')+'"></label>'+
+   '<label class="f"><span>کلید API (اختیاری برای بعضی سرویس‌ها)</span><input type="password" class="ltr" id="ai_key" value="'+esc(a.key||'')+'" autocomplete="off"></label>'+
+   '<label class="f"><span>نام مدل</span><input type="text" class="ltr" id="ai_model" value="'+esc(a.model||'')+'"></label>'+
+   '<label class="f"><span>متن خام مقاله</span><textarea id="ai_text" style="min-height:220px" placeholder="متن را اینجا بچسبان..."></textarea></label>'+
+   '<label class="f"><span>روش اعمال</span><select id="ai_mode"><option value="replace">جایگزین بلوک‌های فعلی</option><option value="append">اضافه به انتهای بلوک‌های فعلی</option></select></label>'+
+   '<button class="pb" data-a="aigo">✨ چینش خودکار</button><div id="st2"></div>';
  },
  publish:function(){
   var g=gh();
@@ -155,7 +183,7 @@ var TABS={
    '<div class="note">انتشار این‌ها را می‌نویسد: صفحهٔ پست، فایل منبع برای ویرایش بعدی، فهرست پست‌ها (برای نمایش خودکار در صفحهٔ اصلی و دسته) و نقشهٔ سایت (sitemap.xml). حدود ۳۰ ثانیه بعد روی سایت است.</div>';
  }
 };
-var NAMES={posts:'پست‌ها',meta:'مشخصات',blocks:'محتوا',related:'مرتبط',seo:'سئو',publish:'انتشار'};
+var NAMES={posts:'پست‌ها',meta:'مشخصات',blocks:'محتوا',ai:'هوش مصنوعی',related:'مرتبط',seo:'سئو',publish:'انتشار'};
 var cur='meta',tabs=document.getElementById('tabs'),body=document.getElementById('body');
 function showTab(k){cur=k;tabs.innerHTML=Object.keys(NAMES).map(function(n){return'<button data-t="'+n+'" class="'+(n===k?'on':'')+'">'+NAMES[n]+'</button>'}).join('');body.innerHTML=TABS[k]()}
 tabs.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(b)showTab(b.dataset.t)});
@@ -163,13 +191,17 @@ tabs.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(
 /* ----- رویدادها ----- */
 body.addEventListener('input',function(e){
   var t=e.target;
-  if(t.dataset.b!==undefined){P.blocks[+t.dataset.b][t.dataset.k]=t.dataset.k==='level'?parseInt(t.value):t.value}
+  if(t.dataset.anc!==undefined){var ab=P.blocks[+t.dataset.anc],chk={};
+    [].forEach.call(body.querySelectorAll('[data-anc="'+t.dataset.anc+'"]'),function(c){if(c.checked)chk[c.dataset.tid]=1});
+    ab.targets=P.blocks.filter(function(x){return chk[x.id]}).map(function(x){return x.id})}
+  else if(t.dataset.b!==undefined){P.blocks[+t.dataset.b][t.dataset.k]=t.dataset.k==='level'?parseInt(t.value):t.type==='checkbox'?t.checked:t.value}
   else if(t.dataset.r!==undefined){P.related[+t.dataset.r][t.dataset.k]=t.value}
   else if(t.dataset.p){var v=t.type==='checkbox'?t.checked:t.value;if(t.dataset.p==='slug'){v=v.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');if(t.value!==v)t.value=v}set(t.dataset.p,v)}
   else return;
   refresh();
 });
 body.addEventListener('change',function(e){if(e.target.dataset.p==='cat'){draw();save()}
+  if(/^ai_(base|key|model)$/.test(e.target.id||'')){localStorage.setItem('SR_AI',JSON.stringify({base:v('ai_base'),key:v('ai_key'),model:v('ai_model')}))}
   if(/^gh[ortb]$/.test(e.target.id||'')){localStorage.setItem('SR_GH',JSON.stringify({o:v('gho'),r:v('ghr'),b:v('ghb')||'main',t:v('ght')}))}});
 function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
 var upTarget='';
@@ -179,8 +211,9 @@ body.addEventListener('click',function(e){
   if(a==='open'){P=merge(clone(R.POST_DEFAULT),DB.drafts[b.dataset.id]);DB.cur=P._id;DB.drafts[P._id]=P;save();draw();showTab('meta');return}
   if(a==='rm'){if(!confirm('این پیش‌نویس حذف شود؟ (روی سایت چیزی حذف نمی‌شود)'))return;delete DB.drafts[b.dataset.id];if(b.dataset.id===P._id){var ks=Object.keys(DB.drafts);if(ks.length)P=DB.drafts[ks[0]];else P=newPost();DB.cur=P._id;DB.drafts[P._id]=P}save();draw();showTab('posts');return}
   if(a==='site')return loadSite();
+  if(a==='aigo')return aiRun();
   if(a==='load')return loadPost(b.dataset.href);
-  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;P.blocks.push(nb)}
+  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;if(t==='audio')nb.dl=true;if(t==='embed'||t==='lottie')nb.height=280;nb.id=bid();P.blocks.push(nb)}
   else if(a==='bdel'){if(!confirm('بلوک حذف شود؟'))return;P.blocks.splice(i,1)}
   else if(a==='bup'||a==='bdn'){var j=a==='bup'?i-1:i+1;if(j<0||j>=P.blocks.length)return;var x=P.blocks[i];P.blocks[i]=P.blocks[j];P.blocks[j]=x}
   else if(a==='radd')P.related.push({title:'',href:'',img:'',desc:''});
@@ -286,6 +319,48 @@ async function ensureCats(){
     for(var c in R.CATS){if(c==='extra')continue;var ci=R.catInfo(S,c);await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,c)),'archive '+c);log('✓ '+ci.dir,true)}
     log('انجام شد ✔',true)}
   catch(er){log('خطا: '+er.message,true)}
+}
+
+/* ----- هوش مصنوعی: چینش خودکار متن ----- */
+function aiCfg(){try{return JSON.parse(localStorage.getItem('SR_AI')||'{}')}catch(e){return{}}}
+var AI_SYS='تو دستیار ویراستاری فارسی برای یک پست‌ساز هستی. متن خام یک مقاله می‌آید. فقط و فقط یک شیء JSON معتبر برگردان (بدون توضیح و بدون ```).\n'+
+'قالب: {"title":"","desc":"خلاصه ۱۲۰ تا ۱۶۰ حرف","tag":"برچسب کوتاه","seoTitle":"حداکثر ۶۰ حرف","seoDesc":"۱۲۰ تا ۱۶۰ حرف","kw":"کلمهٔ کلیدی اصلی","blocks":[...]}\n'+
+'انواع بلوک: {"t":"heading","level":2 یا 3,"text":""} ، {"t":"paragraph","text":""} ، {"t":"list","text":"هر خط یک مورد"} ، {"t":"highlight","label":"نکتهٔ مهم","text":""} ، {"t":"button","label":"","href":""} ، {"t":"image","src":"","alt":"توضیح فارسی","caption":""} ، {"t":"video","url":"لینک یوتیوب"} ، {"t":"aparat","url":"لینک آپارات"} ، {"t":"audio","src":"آدرس mp3","title":"","dl":true} ، {"t":"divider"}\n'+
+'قوانین: ۱) متن نویسنده را حفظ کن و چیزی از خودت اضافه یا حذف نکن؛ فقط ساختار بده. ۲) بخش‌های اصلی را با heading سطح ۲ (حداقل ۲ تا) و زیرمجموعه‌ها را با سطح ۳ جدا کن. ۳) پاراگراف‌های طولانی را به پاراگراف‌های ۲ تا ۴ جمله‌ای بشکن؛ در یک بلوک paragraph می‌توانی چند پاراگراف را با یک خط خالی جدا کنی. ۴) هشدار، نکتهٔ کلیدی و توصیهٔ مهم را در highlight بگذار (حداکثر چند مورد). ۵) موارد شمارشی را به list تبدیل کن. ۶) لینک‌های داخل متن را به شکل [متن](https://...) نگه دار. ۷) آدرس تصویر، ویدیو و صوت داخل متن را به بلوک مناسب تبدیل کن و برای تصویرها alt فارسی بنویس. ۸) title و desc و فیلدهای سئو را از خود متن بساز؛ kw یک عبارت طبیعی است که در عنوان و متن هم آمده باشد.';
+function aiLog(t){var s=document.getElementById('st2');if(s)s.textContent=t}
+async function aiRun(){
+  var a={base:v('ai_base'),key:v('ai_key'),model:v('ai_model')};localStorage.setItem('SR_AI',JSON.stringify(a));
+  var txt=(document.getElementById('ai_text').value||'').trim(),mode=v('ai_mode');
+  if(!/^https?:\/\//.test(a.base)||!a.model)return aiLog('آدرس API (با https) و نام مدل را وارد کن.');
+  if(txt.length<80)return aiLog('متن خیلی کوتاه است.');
+  if(txt.length>60000)return aiLog('متن بیش از ۶۰ هزار نویسه است؛ آن را در چند بخش بده.');
+  var url=a.base.replace(/\/+$/,'');if(!/\/chat\/completions$/.test(url))url+='/chat/completions';
+  aiLog('در حال ارسال... (ممکن است یک دقیقه طول بکشد)');
+  try{
+    var h={'Content-Type':'application/json'};if(a.key)h.Authorization='Bearer '+a.key;
+    var r=await fetch(url,{method:'POST',headers:h,body:JSON.stringify({model:a.model,temperature:.2,messages:[{role:'system',content:AI_SYS},{role:'user',content:txt}]})});
+    var j=await r.json().catch(function(){return null});
+    if(!r.ok)throw new Error((j&&(j.error&&(j.error.message||j.error)||j.message))||('خطای '+r.status));
+    var c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;if(!c)throw new Error('پاسخ خالی بود.');
+    c=String(c).replace(/^[\s\S]*?(\{)/,'$1').replace(/\}[^}]*$/,'}');
+    var o=JSON.parse(c),n=aiApply(o,mode);
+    aiLog('انجام شد ✔ '+n+' بلوک ساخته شد. تب «محتوا» را بررسی و اصلاح کن.');
+  }catch(er){aiLog('خطا: '+(er.message||er)+'\n(اگر پیام «Failed to fetch» است، یعنی سرور اجازهٔ CORS برای مرورگر نداده یا آدرس درست نیست.)')}
+}
+function aiApply(o,mode){
+  var OK={heading:['level','text'],paragraph:['text'],list:['text'],highlight:['label','text'],button:['label','href'],image:['src','alt','caption'],video:['url','title'],aparat:['url','title'],audio:['src','title','dl'],divider:[]};
+  var bl=(Array.isArray(o.blocks)?o.blocks:[]).filter(function(b){return b&&OK[b.t]}).map(function(b){
+    var x={t:b.t,id:bid()};OK[b.t].forEach(function(k){if(b[k]!=null)x[k]=k==='level'?(+b[k]===3?3:2):k==='dl'?!!b[k]:String(b[k])});return x});
+  if(!bl.length)throw new Error('بلوکی در پاسخ نبود.');
+  if(mode==='replace')P.blocks=bl;else P.blocks=P.blocks.concat(bl);
+  var rp=mode==='replace';
+  if(o.title&&(rp||!P.title))P.title=String(o.title);
+  if(o.desc&&(rp||!P.desc))P.desc=String(o.desc);
+  if(o.tag&&(rp||!P.tag))P.tag=String(o.tag);
+  if(o.seoTitle&&(rp||!P.seo.title))P.seo.title=String(o.seoTitle);
+  if(o.seoDesc&&(rp||!P.seo.desc))P.seo.desc=String(o.seoDesc);
+  if(o.kw&&(rp||!P.seo.kw))P.seo.kw=String(o.kw);
+  draw();save();return bl.length;
 }
 
 /* ----- پنل ----- */
