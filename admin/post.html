@@ -116,6 +116,11 @@ function blockUI(b,i){
     var ltr=/آدرس|لینک/.test(lab)?' class="ltr"':'';
     return'<label class="f"><span>'+lab+'</span><input type="text"'+ltr+' data-b="'+i+'" data-k="'+f[0]+'" value="'+esc(v)+'"></label>'+im;
   }).join('');
+  var sel=function(k,lab,opts){return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+k+'">'+opts.map(function(o){return'<option value="'+o[0]+'"'+((b[k]||'')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>'};
+  var AL=[['right','راست‌چین'],['center','وسط‌چین'],['left','چپ‌چین'],['justify','دوطرفه (Justify)']],WD=[['lg','بزرگ (۸۰٪)'],['md','متوسط (۶۰٪)'],['sm','کوچک (۴۰٪)']],media=/^(image|video|aparat|soundcloud|audio|embed|lottie|highlight)$/.test(b.t);
+  var SAME=[['','مثل پیش‌فرض']];
+  if(b.t!=='divider'&&b.t!=='anchors'){rows+=sel('align','چینش — پیش‌فرض (موبایل و دسکتاپ)',[['','پیش‌فرض']].concat(AL))+sel('alignD','چینش فقط در دسکتاپ',SAME.concat(AL))+sel('alignM','چینش فقط در موبایل',SAME.concat(AL))}
+  if(media){rows+=sel('w','اندازه — پیش‌فرض (موبایل خودکار کمی بزرگ‌تر می‌شود)',[['','کامل']].concat(WD))+sel('wD','اندازه فقط در دسکتاپ',SAME.concat([['full','کامل']],WD))+sel('wM','اندازه فقط در موبایل',SAME.concat([['full','کامل']],WD))}
   if(b.t!=='divider'&&b.t!=='anchors')rows+='<label class="f"><span>نام این بلوک در لنگر (اختیاری؛ خالی = خودکار)</span><input type="text" data-b="'+i+'" data-k="alabel" value="'+esc(b.alabel||'')+'"></label>';
   if(b.t==='anchors'){
     rows+='<div class="f"><span>این بلوک‌ها در فهرست لنگر بیایند (با کلیک روی هر مورد، صفحه به همان بلوک می‌رود):</span></div>'+P.blocks.map(function(x,j){
