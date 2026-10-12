@@ -176,6 +176,8 @@ var TABS={
   return'<div class="note">متن خام را از سایت دیگرت اینجا بچسبان؛ هوش مصنوعی آن را به بلوک‌های همین پست‌ساز (عنوان، پاراگراف، فهرست، نکتهٔ مهم، ...) تقسیم می‌کند و عنوان/توضیح/کلمهٔ کلیدی سئو را هم پر می‌کند. متن را بازنویسی نمی‌کند. آدرس و کلید فقط در همین مرورگر ذخیره می‌شوند.</div>'+
    '<label class="f"><span>آدرس API (Base URL، سازگار با OpenAI — مثلاً https://example.com/v1)</span><input type="text" class="ltr" id="ai_base" value="'+esc(a.base||'')+'"></label>'+
    '<label class="f"><span>کلید API (اختیاری برای بعضی سرویس‌ها)</span><input type="password" class="ltr" id="ai_key" value="'+esc(a.key||'')+'" autocomplete="off"></label>'+
+   '<label class="f row"><input type="checkbox" id="ai_px"'+(a.px!==false?' checked':'')+'><span>ارسال از طریق ورکر خودم (پیشنهادی؛ مشکل «NetworkError»، CORS و فیلترینگ را حل می‌کند)</span></label>'+
+   '<label class="f"><span>کلید پروکسی (همان مقدار AI_PROXY_KEY در ورکر)</span><input type="password" class="ltr" id="ai_pk" value="'+esc(a.pk||'')+'" autocomplete="off"></label>'+
    '<label class="f"><span>نام مدل</span><input type="text" class="ltr" id="ai_model" value="'+esc(a.model||'')+'"></label>'+
    '<label class="f"><span>متن خام مقاله</span><textarea id="ai_text" style="min-height:220px" placeholder="متن را اینجا بچسبان..."></textarea></label>'+
    '<label class="f"><span>روش اعمال</span><select id="ai_mode"><option value="replace">جایگزین بلوک‌های فعلی</option><option value="append">اضافه به انتهای بلوک‌های فعلی</option></select></label>'+
@@ -206,7 +208,7 @@ body.addEventListener('input',function(e){
   refresh();
 });
 body.addEventListener('change',function(e){if(e.target.dataset.p==='cat'){draw();save()}
-  if(/^ai_(base|key|model)$/.test(e.target.id||'')){localStorage.setItem('SR_AI',JSON.stringify({base:v('ai_base'),key:v('ai_key'),model:v('ai_model')}))}
+  if(/^ai_(base|key|model|px|pk)$/.test(e.target.id||'')){aiSave()}
   if(/^gh[ortb]$/.test(e.target.id||'')){localStorage.setItem('SR_GH',JSON.stringify({o:v('gho'),r:v('ghr'),b:v('ghb')||'main',t:v('ght')}))}});
 function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
 var upTarget='';
@@ -332,9 +334,10 @@ var AI_SYS='تو دستیار ویراستاری فارسی برای یک پست
 'قالب: {"title":"","desc":"خلاصه ۱۲۰ تا ۱۶۰ حرف","tag":"برچسب کوتاه","seoTitle":"حداکثر ۶۰ حرف","seoDesc":"۱۲۰ تا ۱۶۰ حرف","kw":"کلمهٔ کلیدی اصلی","blocks":[...]}\n'+
 'انواع بلوک: {"t":"heading","level":2 یا 3,"text":""} ، {"t":"paragraph","text":""} ، {"t":"list","text":"هر خط یک مورد"} ، {"t":"highlight","label":"نکتهٔ مهم","text":""} ، {"t":"button","label":"","href":""} ، {"t":"image","src":"","alt":"توضیح فارسی","caption":""} ، {"t":"video","url":"لینک یوتیوب"} ، {"t":"aparat","url":"لینک آپارات"} ، {"t":"audio","src":"آدرس mp3","title":"","dl":true} ، {"t":"divider"}\n'+
 'قوانین: ۱) متن نویسنده را حفظ کن و چیزی از خودت اضافه یا حذف نکن؛ فقط ساختار بده. ۲) بخش‌های اصلی را با heading سطح ۲ (حداقل ۲ تا) و زیرمجموعه‌ها را با سطح ۳ جدا کن. ۳) پاراگراف‌های طولانی را به پاراگراف‌های ۲ تا ۴ جمله‌ای بشکن؛ در یک بلوک paragraph می‌توانی چند پاراگراف را با یک خط خالی جدا کنی. ۴) هشدار، نکتهٔ کلیدی و توصیهٔ مهم را در highlight بگذار (حداکثر چند مورد). ۵) موارد شمارشی را به list تبدیل کن. ۶) لینک‌های داخل متن را به شکل [متن](https://...) نگه دار. ۷) آدرس تصویر، ویدیو و صوت داخل متن را به بلوک مناسب تبدیل کن و برای تصویرها alt فارسی بنویس. ۸) title و desc و فیلدهای سئو را از خود متن بساز؛ kw یک عبارت طبیعی است که در عنوان و متن هم آمده باشد.';
+function aiSave(){var px=document.getElementById('ai_px');localStorage.setItem('SR_AI',JSON.stringify({base:v('ai_base'),key:v('ai_key'),model:v('ai_model'),pk:v('ai_pk'),px:px?px.checked:true}))}
 function aiLog(t){var s=document.getElementById('st2');if(s)s.textContent=t}
 async function aiRun(){
-  var a={base:v('ai_base'),key:v('ai_key'),model:v('ai_model')};localStorage.setItem('SR_AI',JSON.stringify(a));
+  aiSave();var a=aiCfg(),useP=a.px!==false;
   var txt=(document.getElementById('ai_text').value||'').trim(),mode=v('ai_mode');
   if(!/^https?:\/\//.test(a.base)||!a.model)return aiLog('آدرس API (با https) و نام مدل را وارد کن.');
   if(txt.length<80)return aiLog('متن خیلی کوتاه است.');
@@ -342,15 +345,22 @@ async function aiRun(){
   var url=a.base.replace(/\/+$/,'');if(!/\/chat\/completions$/.test(url))url+='/chat/completions';
   aiLog('در حال ارسال... (ممکن است یک دقیقه طول بکشد)');
   try{
-    var h={'Content-Type':'application/json'};if(a.key)h.Authorization='Bearer '+a.key;
-    var r=await fetch(url,{method:'POST',headers:h,body:JSON.stringify({model:a.model,temperature:.2,messages:[{role:'system',content:AI_SYS},{role:'user',content:txt}]})});
+    var payload={model:a.model,temperature:.2,messages:[{role:'system',content:AI_SYS},{role:'user',content:txt}]},r;
+    if(useP){
+      if(!a.pk)return aiLog('کلید پروکسی را وارد کن (یا تیک «ارسال از طریق ورکر» را بردار).');
+      var wk=(S.site.api||R.DEFAULTS.site.api||'').replace(/\/$/,'');if(!wk)return aiLog('آدرس ورکر در تنظیمات سایت ثبت نشده است.');
+      r=await fetch(wk+'/api/aiproxy',{method:'POST',headers:{'Content-Type':'application/json','X-Proxy-Key':a.pk},body:JSON.stringify({url:url,key:a.key||'',body:payload})});
+    }else{
+      var h={'Content-Type':'application/json'};if(a.key)h.Authorization='Bearer '+a.key;
+      r=await fetch(url,{method:'POST',headers:h,body:JSON.stringify(payload)});
+    }
     var j=await r.json().catch(function(){return null});
     if(!r.ok)throw new Error((j&&(j.error&&(j.error.message||j.error)||j.message))||('خطای '+r.status));
     var c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;if(!c)throw new Error('پاسخ خالی بود.');
     c=String(c).replace(/^[\s\S]*?(\{)/,'$1').replace(/\}[^}]*$/,'}');
     var o=JSON.parse(c),n=aiApply(o,mode);
     aiLog('انجام شد ✔ '+n+' بلوک ساخته شد. تب «محتوا» را بررسی و اصلاح کن.');
-  }catch(er){aiLog('خطا: '+(er.message||er)+'\n(اگر پیام «Failed to fetch» است، یعنی سرور اجازهٔ CORS برای مرورگر نداده یا آدرس درست نیست.)')}
+  }catch(er){aiLog('خطا: '+(er.message||er)+'\n(اگر «NetworkError» یا «Failed to fetch» است: تیک «ارسال از طریق ورکر» را بزن.)')}
 }
 function aiApply(o,mode){
   var OK={heading:['level','text'],paragraph:['text'],list:['text'],highlight:['label','text'],button:['label','href'],image:['src','alt','caption'],video:['url','title'],aparat:['url','title'],audio:['src','title','dl'],divider:[]};
