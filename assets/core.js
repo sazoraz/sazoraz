@@ -75,7 +75,7 @@
   /* ---- پست‌های خودکار: /data/posts.json (فایل استاتیک، بدون هزینه)
      فرمت: {"posts":[{"cat":"compose","title":"","desc":"","img":"","tag":"","meta":"","href":"","date":"2026-10-10"}]}
      جدیدترین پست هر دسته به ابتدای اسلایدر همان بخش اضافه می‌شود. */
-  var secs = document.querySelectorAll('section[data-auto]:not([data-auto=""])');
+  var secs = document.querySelectorAll('section[data-auto]:not([data-auto=""]):not([data-static])');
   if (secs.length && 'fetch' in window) {
     fetch('/data/posts.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
       if (!d || !d.posts) return;

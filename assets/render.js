@@ -33,7 +33,7 @@
   var DEFAULTS = {
     site: {
       name: 'ساز و راز', tagline: 'استودیو ملودی و هارمونی', badge: 'PRO',
-      url: 'https://sazoraz.github.io', title: 'ساز و راز | آهنگسازی، میکس و مسترینگ، آکورد و نت',
+      url: 'https://sazoraz.github.io', noindex: false, title: 'ساز و راز | آهنگسازی، میکس و مسترینگ، آکورد و نت',
       desc: 'مرجع فارسی آهنگسازی و تنظیم، میکس و مسترینگ، آکوردهای مدرن و نت‌های پیانو و گیتار با دانلود رایگان.',
       ogImage: '', favicon: '/assets/favicon.svg', api: 'https://log.ttdiscorde23.workers.dev'
     },
@@ -173,11 +173,20 @@
       '<span class="cta">' + esc(c.cta || 'مشاهده') + ic('arrow') + '</span></article>';
   }
 
-  function section(sec) {
-    return '<section class="sec t-' + esc(sec.theme) + '" id="' + esc(sec.id) + '" data-auto="' + esc(sec.auto || '') + '" data-theme-key="' + esc(sec.theme) + '" data-icon="' + esc(sec.icon) + '">' +
+  function robotsMeta(s, force) { return (s.site.noindex || force) ? 'noindex,nofollow' : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1'; }
+  function byDate(a, b) { return String(b.date).localeCompare(String(a.date)); }
+  function pcard(p, sec) {
+    return '<article class="card"><div class="thumb">' + (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.title) + '" width="640" height="360" loading="lazy" decoding="async">' : '<div class="ph">' + (sec && sec.icon ? ic(sec.icon) : '') + '</div>') +
+      (p.tag ? '<span class="chip">' + esc(p.tag) + '</span>' : '') + (p.meta ? '<span class="meta">' + esc(p.meta) + '</span>' : '') + '</div>' +
+      '<div class="card-b"><h3><a class="stretch" href="' + esc(/^(https?:)?\/|^#/.test(p.href || '') ? p.href : '#') + '">' + esc(p.title) + '</a></h3><p>' + esc(p.desc || '') + '</p></div><span class="cta">مشاهده' + ic('arrow') + '</span></article>';
+  }
+  function section(sec, posts) {
+    var ac = (sec.auto && posts) ? posts.filter(function (p) { return p.cat === sec.auto; }).sort(byDate).slice(0, 3) : [];
+    var cards = ac.length ? ac.map(function (p) { return pcard(p, sec); }).concat(sec.cards.slice(0, Math.max(0, 3 - ac.length)).map(function (c) { return card(c, sec); })) : sec.cards.map(function (c) { return card(c, sec); });
+    return '<section class="sec t-' + esc(sec.theme) + '" id="' + esc(sec.id) + '" data-auto="' + esc(sec.auto || '') + '"' + (ac.length ? ' data-static="1"' : '') + ' data-theme-key="' + esc(sec.theme) + '" data-icon="' + esc(sec.icon) + '">' +
       '<div class="sec-h"><div class="sec-t"><span class="sec-i">' + ic(sec.icon) + '</span><div><h2>' + esc(sec.title) + (sec.badge ? '<span class="tag">' + esc(sec.badge) + '</span>' : '') + '</h2><p>' + esc(sec.sub) + '</p></div></div>' +
       '<a class="btn btn-w" href="' + esc(href(sec.href)) + '">' + esc(sec.viewAll) + ic('arrow') + '</a></div>' +
-      '<div class="grid">' + sec.cards.map(function (c) { return card(c, sec); }).join('') + '</div></section>';
+      '<div class="grid">' + cards.join('') + '</div></section>';
   }
 
   function hero(s) {
@@ -208,7 +217,7 @@
       (b.btn ? '<a class="btn" href="' + esc(href(b.href)) + '">' + esc(b.btn) + ic('arrow') + '</a>' : '') + '</section>';
   }
 
-  function main(s) { return hero(s) + s.sections.map(section).join('') + banner(s); }
+  function main(s, posts) { return hero(s) + s.sections.map(function (x) { return section(x, posts); }).join('') + banner(s); }
 
   function jsonld(s) {
     var u = s.site.url.replace(/\/$/, '');
@@ -218,12 +227,12 @@
     ] }).replace(/</g, '\\u003c');
   }
 
-  function page(s) {
+  function page(s, posts) {
     var u = s.site.url.replace(/\/$/, ''), fl = fontLink(s);
     var img = s.site.ogImage ? '<meta property="og:image" content="' + esc(s.site.ogImage) + '"><meta name="twitter:image" content="' + esc(s.site.ogImage) + '">' : '';
     return '<!DOCTYPE html>\n<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
       '<title>' + esc(s.site.title) + '</title><meta name="description" content="' + esc(s.site.desc) + '">' +
-      '<link rel="canonical" href="' + esc(u) + '/"><meta name="robots" content="index,follow,max-image-preview:large">' +
+      '<link rel="canonical" href="' + esc(u) + '/"><meta name="robots" content="' + robotsMeta(s) + '">' +
       '<meta name="theme-color" content="' + esc(s.ui.bg) + '"><meta name="sr-api" content="' + esc(s.site.api) + '">' +
       '<meta property="og:type" content="website"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="' + esc(s.site.name) + '">' +
       '<meta property="og:title" content="' + esc(s.site.title) + '"><meta property="og:description" content="' + esc(s.site.desc) + '"><meta property="og:url" content="' + esc(u) + '/">' +
@@ -234,7 +243,7 @@
       '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg">' + cssVars(s) + '</style>' +
       '<script type="application/ld+json">' + jsonld(s) + '</script></head>' +
       '<body class="' + (s.ui.dots ? 'dots' : '') + '"><a class="skip" href="#main">پرش به محتوا</a>' +
-      header(s) + '<main id="main" class="wrap">' + main(s) + '</main>' + footer(s) +
+      header(s) + '<main id="main" class="wrap">' + main(s, posts) + '</main>' + footer(s) +
       '<script src="/assets/core.js" defer></script></body></html>';
   }
 
@@ -326,7 +335,7 @@
     return '<div class="art-wrap t-' + ci.theme + '"><article class="art">' +
       '<nav class="crumbs" aria-label="مسیر صفحه"><a href="/">خانه</a><span>›</span><a href="' + ci.dir + '">' + esc(ci.name) + '</a><span>›</span><span>' + esc(p.title) + '</span></nav>' +
       '<header class="art-h">' + (p.tag ? '<span class="chip">' + esc(p.tag) + '</span>' : '') + '<h1>' + esc(p.title) + '</h1>' + (p.desc ? '<p class="lead">' + esc(p.desc) + '</p>' : '') + '<div class="art-meta">' + meta + '</div></header>' +
-      (p.img ? '<figure class="cover"><img src="' + esc(href(p.img)) + '" alt="' + esc(p.imgAlt || p.title) + '" fetchpriority="high" decoding="async"></figure>' : '') +
+      (p.img ? '<figure class="cover"><img src="' + esc(href(p.img)) + '" alt="' + esc(p.imgAlt || p.title) + '" width="1200" height="675" fetchpriority="high" decoding="async"></figure>' : '') +
       toc + '<div class="prose' + (p.align === 'right' ? '' : ' j') + '">' + bodyHtml + '</div>' +
       '<div class="art-foot"><button class="btn btn-w" type="button" data-share>' + ic('arrow') + 'اشتراک‌گذاری</button><a class="btn btn-dark" href="' + ci.dir + '">بیشتر در ' + esc(ci.name) + '</a></div></article>' +
       '<section class="related" data-cat="' + esc(p.cat) + '" data-slug="' + esc(p.slug) + '" data-manual="' + (rel.length ? 1 : 0) + '"' + (rel.length ? '' : ' hidden') + '><h2>مطالب مرتبط</h2><div class="grid v">' + rel.map(relCard).join('') + '</div></section>' +
@@ -344,26 +353,37 @@
     var ttl = seo.title || (p.title + ' | ' + s.site.name), dsc = seo.desc || p.desc || s.site.desc, img = p.img ? absUrl(s, p.img) : absUrl(s, s.site.ogImage);
     return '<!DOCTYPE html>\n<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
       '<title>' + esc(ttl) + '</title><meta name="description" content="' + esc(dsc) + '">' +
-      '<link rel="canonical" href="' + esc(url) + '"><meta name="robots" content="' + (seo.noindex ? 'noindex,follow' : 'index,follow,max-image-preview:large') + '">' +
+      '<link rel="canonical" href="' + esc(url) + '"><meta name="robots" content="' + (seo.noindex || s.site.noindex ? 'noindex,follow' : robotsMeta(s)) + '">' +
       '<meta name="theme-color" content="' + esc(s.ui.bg) + '"><meta name="sr-api" content="' + esc(s.site.api) + '">' +
       '<meta property="og:type" content="article"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="' + esc(s.site.name) + '"><meta property="og:title" content="' + esc(ttl) + '"><meta property="og:description" content="' + esc(dsc) + '"><meta property="og:url" content="' + esc(url) + '">' +
       (img ? '<meta property="og:image" content="' + esc(img) + '"><meta name="twitter:image" content="' + esc(img) + '">' : '') + (p.date ? '<meta property="article:published_time" content="' + esc(p.date) + '">' : '') + '<meta property="article:modified_time" content="' + esc(p.updated || p.date || '') + '"><meta property="article:section" content="' + esc(ci.name) + '"><meta name="author" content="' + esc(p.author || s.site.name) + '">' + (img ? '<meta property="og:image:alt" content="' + esc(p.imgAlt || p.title) + '">' : '') + (seo.kw ? '<meta name="keywords" content="' + esc(seo.kw) + '">' : '') +
       '<meta name="twitter:card" content="summary_large_image"><link rel="icon" href="' + esc(s.site.favicon) + '">' +
-      '<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' + (fl ? '<link rel="stylesheet" href="' + esc(fl) + '">' : '') +
+      '<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' + (p.img ? '<link rel="preload" as="image" href="' + esc(href(p.img)) + '" fetchpriority="high">' : '') + (fl ? '<link rel="stylesheet" href="' + esc(fl) + '">' : '') +
       '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg">' + cssVars(s) + '</style><script type="application/ld+json">' + postJsonLd(s, p) + '</script></head>' +
       '<body class="' + (s.ui.dots ? 'dots ' : '') + 't-' + ci.theme + '"><div class="pbar" id="pbar"></div><a class="skip" href="#main">پرش به محتوا</a>' + header(s, ci.dir) +
       '<main id="main" class="wrap">' + postBody(s, p) + '</main>' + footer(s) +
       '<script src="/assets/core.js" defer></script><script src="/assets/post.js" defer></script></body></html>';
   }
-  function archivePage(s, cat) {
-    var ci = catInfo(s, cat), u = s.site.url.replace(/\/$/, ''), t = ci.name + ' | ' + s.site.name;
+  function archivePage(s, cat, posts) {
+    var ci = catInfo(s, cat), u = s.site.url.replace(/\/$/, ''), t = ci.name + ' | ' + s.site.name, url = u + ci.dir;
+    var list = (posts || []).filter(function (p) { return p.cat === cat; }).sort(byDate), first = list.slice(0, 12);
+    var desc = 'آرشیو مطالب ' + ci.name + ' در ' + s.site.name + (list.length ? ' — ' + list.slice(0, 3).map(function (p) { return p.title; }).join('، ') : '');
+    var ld = { '@context': 'https://schema.org', '@graph': [
+      { '@type': 'CollectionPage', name: ci.name, url: url, inLanguage: 'fa-IR', isPartOf: { '@type': 'WebSite', name: s.site.name, url: u + '/' }, mainEntity: { '@type': 'ItemList', itemListElement: first.map(function (p, i) { return { '@type': 'ListItem', position: i + 1, url: u + p.href, name: p.title }; }) } },
+      { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'خانه', item: u + '/' }, { '@type': 'ListItem', position: 2, name: ci.name, item: url }] }] };
+    var fl = fontLink(s);
     return '<!DOCTYPE html>\n<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
-      '<title>' + esc(t) + '</title><meta name="description" content="' + esc('آرشیو مطالب ' + ci.name + ' در ' + s.site.name) + '"><link rel="canonical" href="' + esc(u + ci.dir) + '"><meta name="robots" content="index,follow">' +
-      '<meta name="theme-color" content="#0e1118"><link rel="icon" href="/assets/favicon.svg"><link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' +
-      '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg"></style></head><body class="t-' + ci.theme + '" data-cat="' + esc(cat) + '"><a class="skip" href="#main">پرش به محتوا</a><div id="hdr"></div>' +
-      '<main id="main" class="wrap"><div class="pg wide"><div class="pg-h"><h1>' + esc(ci.name) + '</h1></div><div id="list" class="grid v"><div class="box">در حال بارگذاری...</div></div><div class="acts"><button class="btn" type="button" id="more" hidden>نمایش بیشتر</button></div></div></main><div id="ftr"></div>' +
+      '<title>' + esc(t) + '</title><meta name="description" content="' + esc(desc.slice(0, 200)) + '"><link rel="canonical" href="' + esc(url) + '"><meta name="robots" content="' + robotsMeta(s) + '">' +
+      '<meta property="og:type" content="website"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="' + esc(s.site.name) + '"><meta property="og:title" content="' + esc(t) + '"><meta property="og:url" content="' + esc(url) + '">' +
+      (s.site.ogImage ? '<meta property="og:image" content="' + esc(absUrl(s, s.site.ogImage)) + '">' : '') + '<meta name="twitter:card" content="summary_large_image">' +
+      '<meta name="theme-color" content="' + esc(s.ui.bg) + '"><meta name="sr-api" content="' + esc(s.site.api) + '"><link rel="icon" href="' + esc(s.site.favicon) + '"><link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>' +
+      (fl ? '<link rel="stylesheet" href="' + esc(fl) + '">' : '') + '<link rel="stylesheet" href="/assets/theme.css"><style id="cfg">' + cssVars(s) + '</style>' +
+      '<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script></head>' +
+      '<body class="' + (s.ui.dots ? 'dots ' : '') + 't-' + ci.theme + '" data-cat="' + esc(cat) + '"><a class="skip" href="#main">پرش به محتوا</a>' + header(s, ci.dir) +
+      '<main id="main" class="wrap"><div class="pg wide"><nav class="crumbs" aria-label="مسیر صفحه"><a href="/">خانه</a><span>›</span><span>' + esc(ci.name) + '</span></nav><div class="pg-h"><h1>' + esc(ci.name) + '</h1></div>' +
+      '<div id="list" class="grid v"' + (first.length ? ' data-static="' + first.length + '"' : '') + '>' + (first.length ? first.map(function (p) { return pcard(p, null); }).join('') : '<div class="box">هنوز مطلبی در این بخش منتشر نشده است.</div>') + '</div><div class="acts"><button class="btn" type="button" id="more" hidden>نمایش بیشتر</button></div></div></main>' + footer(s) +
       '<script src="/assets/render.js"></script><script src="/assets/shell.js" data-active="' + esc(ci.dir) + '"></script><script src="/assets/archive.js" defer></script></body></html>';
   }
 
-  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, apId: apId, blabel: blabel };
+  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, byDate: byDate, robotsMeta: robotsMeta, apId: apId, blabel: blabel };
 });

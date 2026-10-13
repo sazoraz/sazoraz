@@ -16,6 +16,8 @@
     }
     fetch('/data/posts.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : { posts: [] }; }).catch(function () { return { posts: [] }; }).then(function (d) {
       all = (d.posts || []).filter(function (p) { return p.cat === cat; }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+      var st = parseInt(box.dataset.static || '0', 10);
+      if (st) { shown = st; more.hidden = shown >= all.length; more.onclick = draw; return; }
       box.textContent = ''; if (!all.length) { box.appendChild(el('div', 'box', 'هنوز مطلبی در این بخش منتشر نشده است.')); return; }
       draw(); more.onclick = draw;
     });
