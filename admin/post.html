@@ -64,6 +64,8 @@ function save(){DB.drafts[P._id]=P;try{localStorage.setItem(DBK,JSON.stringify(D
 
 /* ----- پیش‌نمایش زنده ----- */
 var stage=document.getElementById('stage'),tmr;
+function nz(x){return String(x||'').replace(/\u200c/g,' ').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').toLowerCase()}
+function has(a,k){return nz(a).indexOf(nz(k))>=0}
 function bid(){return 'k'+Math.random().toString(36).slice(2,7)}
 function draw(){
   P.blocks.forEach(function(b){if(!b.id)b.id=bid()});
@@ -170,7 +172,7 @@ var TABS={
    (function(){var k=(P.seo.kw||'').trim();if(!k)return'<div class="note">کلمهٔ کلیدی را بنویس تا بررسی‌های بیشتری انجام شود.</div>';
      var fp=(P.blocks.filter(function(b){return b.t==='paragraph'})[0]||{}).text||'',hs=P.blocks.filter(function(b){return b.t==='heading'}).map(function(b){return b.text}).join(' ');
      var wc=P.blocks.reduce(function(n,b){return n+((b.text||'').split(/\s+/).length)},0),inl=P.blocks.filter(function(b){return /\]\((\/|https?:)/.test(b.text||'')}).length;
-     return ck(t.indexOf(k)>=0,'کلمه در عنوان سئو')+ck(d.indexOf(k)>=0,'کلمه در توضیح متا')+ck(fp.indexOf(k)>=0,'کلمه در پاراگراف اول')+ck(hs.indexOf(k)>=0,'کلمه در یکی از عنوان‌های داخل متن')+ck(wc>=300,'حجم متن حدود '+wc+' کلمه (بهتر: بیش از ۳۰۰)')+ck(inl>=1,'حداقل یک لینک داخل متن')})()+
+     return ck(has(t,k),'کلمه در عنوان سئو')+ck(has(d,k),'کلمه در توضیح متا')+ck(has(fp,k),'کلمه در پاراگراف اول')+ck(has(hs,k),'کلمه در یکی از عنوان‌های داخل متن')+ck(wc>=300,'حجم متن حدود '+wc+' کلمه (بهتر: بیش از ۳۰۰)')+ck(inl>=1,'حداقل یک لینک داخل متن')})()+
    ck(S.site.url.indexOf('example.com')<0,'آدرس دامنه در تب «سایت» ساز صفحهٔ اصلی تنظیم شده');
  },
  ai:function(){
@@ -188,7 +190,7 @@ var TABS={
  publish:function(){
   var g=gh();
   return'<label class="f"><span>نام کاربری گیت‌هاب (یا Organization)</span><input type="text" class="ltr" id="gho" value="'+esc(g.o||'')+'"></label><label class="f"><span>نام ریپازیتوری</span><input type="text" class="ltr" id="ghr" value="'+esc(g.r||'')+'"></label><label class="f"><span>برنچ</span><input type="text" class="ltr" id="ghb" value="'+esc(g.b||'main')+'"></label><label class="f"><span>توکن (همان توکن ساز صفحهٔ اصلی)</span><input type="password" class="ltr" id="ght" value="'+esc(g.t||'')+'"></label>'+
-   '<button class="pb" data-a="pub">🚀 انتشار پست</button><button class="pb s" data-a="cats">📂 ساخت صفحهٔ همهٔ دسته‌ها (یک‌بار)</button><button class="pb dg" data-a="unpub">🗑 حذف این پست از سایت</button><button class="pb s" data-a="dl">⬇️ دانلود HTML پست</button><div id="st"></div>'+
+   '<button class="pb" data-a="pub">🚀 انتشار پست</button><button class="pb s" data-a="all">🔄 انتشار مجدد همهٔ پست‌ها</button><button class="pb s" data-a="cats">📂 ساخت صفحهٔ همهٔ دسته‌ها (یک‌بار)</button><button class="pb dg" data-a="unpub">🗑 حذف این پست از سایت</button><button class="pb s" data-a="dl">⬇️ دانلود HTML پست</button><div id="st"></div>'+
    '<div class="note">انتشار این‌ها را می‌نویسد: صفحهٔ پست، فایل منبع برای ویرایش بعدی، فهرست پست‌ها (برای نمایش خودکار در صفحهٔ اصلی و دسته) و نقشهٔ سایت (sitemap.xml). حدود ۳۰ ثانیه بعد روی سایت است.</div>';
  }
 };
@@ -234,6 +236,7 @@ body.addEventListener('click',function(e){
   else if(a==='pub')return publish();
   else if(a==='unpub')return unpublish();
   else if(a==='cats')return ensureCats();
+  else if(a==='all')return republishAll();
   else if(a==='dl')return dl(P.slug+'.html',cleanHtml(),'text/html');
   draw();save();showTab(cur);
 });
@@ -299,6 +302,26 @@ async function writePosts(g,posts){
   await putF(g,'data/posts.json',b64(JSON.stringify({posts:posts},null,1)),'update posts index');
   await putF(g,'sitemap.xml',b64(pageList(posts)),'update sitemap');
 }
+async function rebuildListings(g,posts,cats){
+  for(var i=0;i<cats.length;i++){var ci=R.catInfo(S,cats[i]);await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,cats[i],posts)),'archive '+cats[i]);log('✓ صفحهٔ دستهٔ '+ci.name,true)}
+  await putF(g,'index.html',b64(R.page(S,posts)),'home');log('✓ صفحهٔ اصلی',true);
+}
+async function republishAll(){
+  try{
+    var g=g0();if(!confirm('همهٔ پست‌ها، صفحه‌های دسته و صفحهٔ اصلی دوباره ساخته شوند؟ (چند دقیقه طول می‌کشد)'))return;
+    var posts=await readPosts(g),n=0;log('در حال بازسازی '+posts.length+' پست...');
+    for(var i=0;i<posts.length;i++){
+      var slug=posts[i].href.split('/').filter(Boolean).pop(),f=await getF(g,'data/posts/'+slug+'.json');
+      if(!f){log('⚠ منبع پیدا نشد: '+slug,true);continue}
+      var o=JSON.parse(ub64(f.content)),ci=R.catInfo(S,o.cat);
+      await putF(g,ci.dir.slice(1)+o.slug+'/index.html',b64(R.postHtml(S,o)),'republish '+o.slug);n++;log('✓ '+o.slug+' ('+n+'/'+posts.length+')',true);
+    }
+    var cats=[];for(var c in R.CATS){if(c!=='extra')cats.push(c)}
+    await rebuildListings(g,posts,cats);
+    await putF(g,'sitemap.xml',b64(pageList(posts)),'update sitemap');
+    log('\nهمه بازسازی شد ✔',true);
+  }catch(er){log('خطا: '+er.message,true)}
+}
 async function publish(){
   try{
     var g=g0(),o=out();
@@ -313,7 +336,7 @@ async function publish(){
     var posts=(await readPosts(g)).filter(function(p){return p.href!==href});
     posts.push({cat:o.cat,title:o.title,desc:o.desc,img:o.img,tag:o.tag,meta:R.readMin(o),href:href,date:o.date});
     await writePosts(g,posts);log('✓ فهرست پست‌ها و sitemap',true);
-    var ar=await getF(g,ci.dir.slice(1)+'index.html');if(!ar){await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,o.cat)),'archive '+o.cat);log('✓ صفحهٔ دستهٔ '+ci.name,true)}
+    await rebuildListings(g,posts,[o.cat]);
     log('\nمنتشر شد ✔ تا ~۳۰ ثانیه دیگر:\n'+S.site.url.replace(/\/$/,'')+href,true);
   }catch(er){log('خطا: '+er.message+'\n(توکن یا نام ریپازیتوری را بررسی کن)',true)}
 }
@@ -323,12 +346,13 @@ async function unpublish(){
     var ci=R.catInfo(S,o.cat),href=ci.dir+o.slug+'/';log('در حال حذف...');
     await delF(g,ci.dir.slice(1)+o.slug+'/index.html');await delF(g,'data/posts/'+o.slug+'.json');
     var posts=(await readPosts(g)).filter(function(p){return p.href!==href});await writePosts(g,posts);
+    await rebuildListings(g,posts,[o.cat]);
     log('حذف شد ✔',true);
   }catch(er){log('خطا: '+er.message,true)}
 }
 async function ensureCats(){
   try{var g=g0();log('در حال ساخت...');
-    for(var c in R.CATS){if(c==='extra')continue;var ci=R.catInfo(S,c);await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,c)),'archive '+c);log('✓ '+ci.dir,true)}
+    for(var c in R.CATS){if(c==='extra')continue;var ci=R.catInfo(S,c);await putF(g,ci.dir.slice(1)+'index.html',b64(R.archivePage(S,c,await readPosts(g))),'archive '+c);log('✓ '+ci.dir,true)}
     log('انجام شد ✔',true)}
   catch(er){log('خطا: '+er.message,true)}
 }
@@ -338,7 +362,8 @@ function aiCfg(){try{return JSON.parse(localStorage.getItem('SR_AI')||'{}')}catc
 var SITEPOSTS=[];
 fetch('/data/posts.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.posts){SITEPOSTS=d.posts;if(typeof cur!=='undefined'&&cur==='blocks')showTab('blocks')}}).catch(function(){});
 function aiSys(){
-  var links=SITEPOSTS.filter(function(p){return p.href&&p.title}).slice(0,60).map(function(p){return '- '+p.title+' → '+p.href}).join('\n');
+  var core=[{title:'صفحهٔ اصلی',href:'/'},{title:'فروشگاه',href:'/shop/'},{title:'آرشیو آهنگسازی و تنظیم',href:'/compose/'},{title:'آرشیو میکس و مسترینگ',href:'/mixing/'},{title:'آرشیو آکوردها',href:'/chords/'},{title:'آرشیو نت‌ها',href:'/sheets/'}];
+  var links=core.concat(SITEPOSTS).filter(function(p){return p.href&&p.title}).slice(0,60).map(function(p){return '- '+p.title+' → '+p.href}).join('\n');
   return 'تو ویراستار و متخصص سئوی فارسی برای یک پست‌ساز وب‌سایت هستی. متن خام یک مقاله می‌آید. فقط و فقط یک شیء JSON معتبر برگردان (بدون توضیح و بدون ```).\n'+
 'قالب: {"title":"","slug":"english-short-slug","desc":"","tag":"","seoTitle":"","seoDesc":"","kw":"","blocks":[...]}\n'+
 'انواع بلوک: {"t":"heading","level":2 یا 3,"text":""} ، {"t":"paragraph","text":""} ، {"t":"list","text":"هر خط یک مورد"} ، {"t":"highlight","label":"نکتهٔ مهم","text":""} ، {"t":"button","label":"","href":""} ، {"t":"image","src":"","alt":"","caption":""} ، {"t":"video","url":"لینک یوتیوب"} ، {"t":"aparat","url":"لینک آپارات"} ، {"t":"audio","src":"آدرس mp3","title":"","dl":true} ، {"t":"divider"}\n'+
@@ -350,9 +375,18 @@ function aiSys(){
 '۵) نکتهٔ کلیدی/هشدار → highlight (کم، حداکثر ۳ بار)؛ موارد شمارشی → list؛ لینک‌ها به شکل [متن](https://...) حفظ شوند؛ آدرس تصویر/ویدیو/صوت داخل متن به بلوک مناسب تبدیل شود و برای هر تصویر alt فارسی توصیفی (شامل کلمهٔ کلیدی در صورت ارتباط) نوشته شود.\n'+
 '۶) در انتهای مقاله یک جمع‌بندی کوتاه (heading + paragraph) بیاور.\n'+
 '۷) متن و محتوای نویسنده را حفظ کن؛ چیزی از خودت نساز و حقیقتی اضافه نکن؛ فقط ساختار، تقسیم‌بندی و فیلدهای سئو را بهینه کن. اگر جملهٔ اضافهٔ تکراری یا محاوره‌ای واضح است می‌توانی ویرایش جزئی کنی.\n'+
-(links?'۸) لینک داخلی: فهرست مطالب موجود سایت در زیر آمده. ۱ تا ۳ مورد که واقعاً مرتبط‌اند را به‌صورت طبیعی داخل متن پاراگراف‌ها با قالب [متن لنگر توصیفی](مسیر) بیاور (متن لنگر عبارت معنادار باشد، نه «اینجا»). اگر هیچ‌کدام مرتبط نیست، لینک نگذار و چیزی نساز.\n'+links:'۸) لینک داخلی: فهرستی در دسترس نیست؛ لینک داخلی نساز.');
+(links?'۸) لینک داخلی: فهرست صفحات موجود سایت (آرشیوها، فروشگاه و مطالب) در زیر آمده. ۱ تا ۳ مورد که واقعاً مرتبط‌اند را به‌صورت طبیعی داخل متن پاراگراف‌ها با قالب [متن لنگر توصیفی](مسیر) بیاور (متن لنگر عبارت معنادار باشد، نه «اینجا»). اگر هیچ‌کدام مرتبط نیست، لینک نگذار و چیزی نساز.\n'+links:'۸) لینک داخلی: فهرستی در دسترس نیست؛ لینک داخلی نساز.');
 }
 function aiSave(){var px=document.getElementById('ai_px');localStorage.setItem('SR_AI',JSON.stringify({base:v('ai_base'),key:v('ai_key'),model:v('ai_model'),pk:v('ai_pk'),px:px?px.checked:true}))}
+async function callAI(a,url,payload){
+  if(a.px!==false){
+    if(!a.pk){aiLog('کلید پروکسی را وارد کن (یا تیک «ارسال از طریق ورکر» را بردار).');return null}
+    var wk=(S.site.api||R.DEFAULTS.site.api||'').replace(/\/$/,'');if(!wk){aiLog('آدرس ورکر در تنظیمات سایت ثبت نشده است.');return null}
+    return fetch(wk+'/api/aiproxy',{method:'POST',headers:{'Content-Type':'application/json','X-Proxy-Key':a.pk},body:JSON.stringify({url:url,key:a.key||'',body:payload})});
+  }
+  var h={'Content-Type':'application/json'};if(a.key)h.Authorization='Bearer '+a.key;
+  return fetch(url,{method:'POST',headers:h,body:JSON.stringify(payload)});
+}
 function aiLog(t){var s=document.getElementById('st2');if(s)s.textContent=t}
 async function aiRun(){
   aiSave();var a=aiCfg(),useP=a.px!==false;
@@ -363,30 +397,38 @@ async function aiRun(){
   var url=a.base.replace(/\/+$/,'');if(!/\/chat\/completions$/.test(url))url+='/chat/completions';
   aiLog('در حال ارسال... (ممکن است یک دقیقه طول بکشد)');
   try{
-    var payload={model:a.model,temperature:.2,messages:[{role:'system',content:aiSys()},{role:'user',content:txt}]},r;
-    if(useP){
-      if(!a.pk)return aiLog('کلید پروکسی را وارد کن (یا تیک «ارسال از طریق ورکر» را بردار).');
-      var wk=(S.site.api||R.DEFAULTS.site.api||'').replace(/\/$/,'');if(!wk)return aiLog('آدرس ورکر در تنظیمات سایت ثبت نشده است.');
-      r=await fetch(wk+'/api/aiproxy',{method:'POST',headers:{'Content-Type':'application/json','X-Proxy-Key':a.pk},body:JSON.stringify({url:url,key:a.key||'',body:payload})});
-    }else{
-      var h={'Content-Type':'application/json'};if(a.key)h.Authorization='Bearer '+a.key;
-      r=await fetch(url,{method:'POST',headers:h,body:JSON.stringify(payload)});
-    }
+    var payload={model:a.model,temperature:.2,messages:[{role:'system',content:aiSys()},{role:'user',content:txt}]};
+    var r=await callAI(a,url,payload);
+    if(r===null)return;
     var j=await r.json().catch(function(){return null});
     if(!r.ok)throw new Error((j&&(j.error&&(j.error.message||j.error)||j.message))||('خطای '+r.status));
     var c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;if(!c)throw new Error('پاسخ خالی بود.');
     c=String(c).replace(/^[\s\S]*?(\{)/,'$1').replace(/\}[^}]*$/,'}');
-    var o=JSON.parse(c),n=aiApply(o,mode);
+    var o=JSON.parse(c),n=aiApply(o,mode),iss=aiIssues();
+    if(iss.length){
+      aiLog('اصلاح خودکار موارد سئو...');
+      try{
+        var p2={model:a.model,temperature:.2,messages:[{role:'system',content:aiSys()},{role:'user',content:txt},{role:'assistant',content:c},{role:'user',content:'این موارد سئو رعایت نشده است: '+iss.join('؛ ')+'. همان JSON کامل را با اصلاح همین موارد دوباره برگردان (عبارت kw باید عیناً در متن‌های گفته‌شده بیاید). فقط JSON.'}]};
+        var r2=await callAI(a,url,p2),j2=await r2.json().catch(function(){return null}),c2=j2&&j2.choices&&j2.choices[0]&&j2.choices[0].message&&j2.choices[0].message.content;
+        if(r2.ok&&c2){c2=String(c2).replace(/^[\s\S]*?(\{)/,'$1').replace(/\}[^}]*$/,'}');var o2=JSON.parse(c2);n=aiApply(o2,'replace')}
+      }catch(e2){}
+    }
     aiLog('انجام شد ✔ '+n+'\nتب «محتوا» را بررسی و اصلاح کن.');
   }catch(er){aiLog('خطا: '+(er.message||er)+'\n(اگر «NetworkError» یا «Failed to fetch» است: تیک «ارسال از طریق ورکر» را بزن.)')}
 }
+function aiIssues(){
+  var k=(P.seo.kw||'').trim(),t=P.seo.title||P.title,d=P.seo.desc||P.desc,fp=(P.blocks.filter(function(b){return b.t==='paragraph'})[0]||{}).text||'',hs=P.blocks.filter(function(b){return b.t==='heading'}).map(function(b){return b.text}).join(' '),w=[];
+  if(!k)w.push('kw خالی است');else{
+    if(!has(t,k))w.push('عبارت kw دقیقاً در seoTitle نیست');if(!has(d,k))w.push('عبارت kw دقیقاً در seoDesc نیست');
+    if(!has(fp,k))w.push('عبارت kw دقیقاً در پاراگراف اول نیست');if(!has(hs,k))w.push('عبارت kw دقیقاً در هیچ‌کدام از headingها نیست')}
+  if(d.length<100||d.length>170)w.push('طول seoDesc باید ۱۲۰ تا ۱۶۰ باشد (الان '+d.length+')');
+  if((P.seo.title||P.title).length>65)w.push('seoTitle بلندتر از ۶۰ حرف است');
+  if(P.blocks.filter(function(b){return b.t==='heading'}).length<3)w.push('کمتر از ۳ heading دارد');
+  return w;
+}
 function aiReport(){
-  var k=(P.seo.kw||'').trim(),t=P.seo.title||P.title,d=P.seo.desc||P.desc,fp=(P.blocks.filter(function(b){return b.t==='paragraph'})[0]||{}).text||'',hs=P.blocks.filter(function(b){return b.t==='heading'}).map(function(b){return b.text}).join(' '),
-  il=P.blocks.filter(function(b){return /\]\(\/[^)]/.test(b.text||'')}).length,w=[];
-  if(!k)w.push('کلمهٔ کلیدی ندارد');else{if(t.indexOf(k)<0)w.push('کلمهٔ کلیدی در عنوان نیست');if(d.indexOf(k)<0)w.push('کلمهٔ کلیدی در توضیح نیست');if(fp.indexOf(k)<0)w.push('کلمهٔ کلیدی در پاراگراف اول نیست');if(hs.indexOf(k)<0)w.push('کلمهٔ کلیدی در هیچ عنوانی نیست')}
-  if(d.length<100||d.length>170)w.push('طول توضیح '+d.length+' است');
-  w.push(il?il+' بلوک لینک داخلی دارد':'لینک داخلی ندارد');
-  return ' بلوک ساخته شد.\nبررسی سئو: '+(w.join('، ')||'همه چیز خوب است')+'.\n(بقیه را در تب «سئو» ببین)';
+  var w=aiIssues(),il=P.blocks.filter(function(b){return /\]\(\/[^)]/.test(b.text||'')}).length;
+  return ' بلوک ساخته شد.\nبررسی سئو: '+(w.join('، ')||'همه چیز خوب است')+'. '+(il?il+' بلوک لینک داخلی دارد.':'لینک داخلی ندارد.');
 }
 function aiApply(o,mode){
   var OK={heading:['level','text'],paragraph:['text'],list:['text'],highlight:['label','text'],button:['label','href'],image:['src','alt','caption'],video:['url','title'],aparat:['url','title'],audio:['src','title','dl'],divider:[]};

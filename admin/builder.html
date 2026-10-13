@@ -81,7 +81,7 @@ function bar(p,i,len){return'<div class="bar"><button data-a="up" data-p="'+p+'"
 function add(p,l){return'<button class="pb s" data-a="add" data-p="'+p+'">＋ '+l+'</button>'}
 
 var TABS={
-site:function(){return F('site.name','نام سایت')+F('site.tagline','شعار زیر نام')+F('site.badge','برچسب کنار نام (خالی = حذف)')+F('site.loginLabel','متن دکمهٔ ورود (هدر)')+F('site.title','عنوان صفحه (SEO)')+F('site.desc','توضیح متا (۱۵۰–۱۶۰ حرف)','area')+F('site.url','آدرس دامنه (https://...)')+F('site.ogImage','تصویر اشتراک‌گذاری (آدرس)')+F('site.favicon','آیکن (آدرس)')+F('site.api','آدرس ورکر اصلی (برای ورود کاربران)','url')+'<div class="note">آدرس ورکر را وقتی ورکر ورود/ثبت‌نام را ساختیم اینجا بگذار؛ تا آن موقع خالی بماند.</div>'},
+site:function(){return F('site.name','نام سایت')+F('site.tagline','شعار زیر نام')+F('site.badge','برچسب کنار نام (خالی = حذف)')+F('site.loginLabel','متن دکمهٔ ورود (هدر)')+F('site.title','عنوان صفحه (SEO)')+F('site.desc','توضیح متا (۱۵۰–۱۶۰ حرف)','area')+F('site.url','آدرس دامنه (https://...)')+F('site.noindex','سایت ایندکس نشود (حالت آزمایشی؛ هنگام راه‌اندازی نهایی خاموش شود)','check')+F('site.ogImage','تصویر اشتراک‌گذاری (آدرس)')+F('site.favicon','آیکن (آدرس)')+F('site.api','آدرس ورکر اصلی (برای ورود کاربران)','url')+'<div class="note">آدرس ورکر را وقتی ورکر ورود/ثبت‌نام را ساختیم اینجا بگذار؛ تا آن موقع خالی بماند.</div>'},
 look:function(){
   return '<h4 class="g">فونت</h4>'+F('fonts.heading','فونت تیترها (نام دقیق)')+F('fonts.body','فونت متن عادی')+F('fonts.customCss','آدرس CSS فونت سفارشی (اختیاری)')+
   '<div class="note">«Vazirmatn» و «Lalezar» از فایل‌های خود سایت لود می‌شوند (سریع و بدون نیاز به گوگل). هر نام دیگری از Google Fonts لود می‌شود — در ایران ممکن است کند یا فیلتر باشد.</div>'+
@@ -156,7 +156,9 @@ body.addEventListener('change',function(e){
 function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
 
 /* ---------- خروجی ---------- */
-function pageHtml(){return R.page(S)}
+var POSTS=[];
+fetch('/data/posts.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.posts)POSTS=d.posts}).catch(function(){});
+function pageHtml(){return R.page(S,POSTS)}
 function dl(n,c,m){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:m+';charset=utf-8'}));a.download=n;document.body.appendChild(a);a.click();a.remove()}
 function b64(s){return btoa(unescape(encodeURIComponent(s)))}
 async function put(g,path,content){
