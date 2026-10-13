@@ -248,7 +248,7 @@
     extra: { theme: 'extra', name: 'متفرقه', dir: '/blog/' }
   };
   var POST_DEFAULT = { slug: '', cat: 'compose', title: '', desc: '', img: '', imgAlt: '', tag: '', readTime: '', date: '', updated: '', author: 'ساز و راز', comments: true, blocks: [], related: [], align: 'justify', seo: { title: '', desc: '', noindex: false, kw: '' } };
-  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده', aparat: 'ویدیوی آپارات', lottie: 'انیمیشن لوتی (Lottie)', embed: 'انیمیشن / کد HTML-CSS-JS', anchors: 'لنگر (فهرست پیوند به بلوک‌ها)' };
+  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده', aparat: 'ویدیوی آپارات', lottie: 'انیمیشن لوتی (Lottie)', embed: 'انیمیشن / کد HTML-CSS-JS', anchors: 'لنگر (فهرست پیوند به بلوک‌ها)', adbanner: 'بنر تبلیغاتی (گیف / تصویر / کد متحرک)' };
   function catInfo(s, cat) {
     var c = CATS[cat] || CATS.extra, sec = (s.sections || []).filter(function (x) { return x.auto === cat; })[0];
     return { theme: c.theme, dir: c.dir, name: (sec && sec.short) || c.name };
@@ -296,6 +296,11 @@
       case 'video': var id = ytId(b.url); return id ? '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + id + '" title="' + esc(b.title || 'ویدیو') + '" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' : '';
       case 'soundcloud': return /^https:\/\/soundcloud\.com\//.test(b.url || '') ? '<div class="sc"><iframe src="https://w.soundcloud.com/player/?url=' + encodeURIComponent(b.url) + '&color=%23ff9770&hide_related=true&show_comments=false" title="' + esc(b.title || 'SoundCloud') + '" loading="lazy"></iframe></div>' : '';
       case 'aparat': var ai = apId(b.url); return ai ? '<div class="vid"><iframe src="https://www.aparat.com/video/video/embed/videohash/' + ai + '/vt/frame" title="' + esc(b.title || 'ویدیو آپارات') + '" loading="lazy" allowfullscreen></iframe></div>' : '';
+      case 'adbanner':
+        var inner = '';
+        if (b.mode === 'code') inner = b.code ? sandbox(b.code, b.height || 200, b.title || 'بنر') : '';
+        else if (b.src) { var im = '<img src="' + esc(href(b.src)) + '" alt="' + esc(b.alt || b.title || 'بنر') + '" loading="lazy" decoding="async">'; inner = b.href ? '<a href="' + esc(href(b.href)) + '" target="_blank" rel="sponsored noopener">' + im + '</a>' : im; }
+        return inner ? '<aside class="adb">' + (b.label === '-' ? '' : '<span class="adb-l">' + esc(b.label || 'تبلیغات') + '</span>') + inner + '</aside>' : '';
       case 'embed': return b.code ? '<div class="emb">' + sandbox(b.code, b.height, b.title) + '</div>' : '';
       case 'lottie': return /^https:\/\//.test(b.url || '') ? '<div class="emb">' + sandbox('<script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"><\/script><lottie-player src="' + esc(b.url) + '" background="transparent" speed="1" style="width:100%;height:100%" loop autoplay></lottie-player>', b.height || 280, b.title || 'انیمیشن', 'html,body{height:100%}') + '</div>' : '';
       case 'anchors':
