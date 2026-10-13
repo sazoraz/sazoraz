@@ -100,6 +100,7 @@ var BF={
  lottie:[['url','آدرس فایل لوتی (https — فرمت .json یا .lottie)'],['height','ارتفاع (px)','num'],['title','عنوان (برای دسترسی‌پذیری)']],
  embed:[['code','کد کامل HTML / CSS / JavaScript (انیمیشن، Hyperframes، GSAP و ...)','code'],['height','ارتفاع (px)','num'],['title','عنوان (برای دسترسی‌پذیری)']],
  anchors:[['title','عنوان کادر (خالی = پرش سریع به بخش‌ها)']],
+ adbanner:[['mode','نوع بنر','sel',[['image','تصویر / گیف'],['code','کد متحرک (HTML / CSS / JS / Hyperframes)']]],['src','آدرس تصویر یا گیف','img'],['href','لینک مقصد (با کلیک روی بنر)'],['alt','توضیح تصویر'],['code','کد کامل (فقط برای نوع «کد متحرک»)','code'],['height','ارتفاع کد (px)','num'],['label','برچسب بالای بنر (خالی = تبلیغات ؛ یک خط تیره - = بدون برچسب)']],
  highlight:[['label','عنوان کادر (خالی = نکتهٔ مهم)'],['text','متن نکته','area']],
  list:[['text','هر خط یک مورد','area']],
  button:[['label','متن دکمه'],['href','لینک (دانلود/صفحه)'],['note','توضیح کنار دکمه']],
@@ -111,13 +112,13 @@ function blockUI(b,i){
     if(t==='area')return'<label class="f"><span>'+lab+'</span><textarea data-b="'+i+'" data-k="'+f[0]+'">'+esc(v)+'</textarea></label>';
     if(t==='code')return'<label class="f"><span>'+lab+'</span><textarea class="ltr" dir="ltr" spellcheck="false" style="min-height:200px;font-family:monospace;font-size:12px" data-b="'+i+'" data-k="'+f[0]+'">'+esc(v)+'</textarea></label>';
     if(t==='bool')return'<label class="f row"><input type="checkbox" data-b="'+i+'" data-k="'+f[0]+'"'+(v?' checked':'')+'><span>'+lab+'</span></label>';
-    if(t==='sel')return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+f[0]+'">'+f[3].map(function(o){return'<option value="'+o[0]+'"'+(+v===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>';
+    if(t==='sel')return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+f[0]+'">'+f[3].map(function(o){return'<option value="'+o[0]+'"'+(String(v)===String(o[0])?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>';
     var im=t==='img'?'<div class="bar"><button data-a="up" data-t="b'+i+'.'+f[0]+'">⬆️ آپلود تصویر از گوشی</button></div>':'';
     var ltr=/آدرس|لینک/.test(lab)?' class="ltr"':'';
     return'<label class="f"><span>'+lab+'</span><input type="text"'+ltr+' data-b="'+i+'" data-k="'+f[0]+'" value="'+esc(v)+'"></label>'+im;
   }).join('');
   var sel=function(k,lab,opts){return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+k+'">'+opts.map(function(o){return'<option value="'+o[0]+'"'+((b[k]||'')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>'};
-  var AL=[['right','راست‌چین'],['center','وسط‌چین'],['left','چپ‌چین'],['justify','دوطرفه (Justify)']],WD=[['lg','بزرگ (۸۰٪)'],['md','متوسط (۶۰٪)'],['sm','کوچک (۴۰٪)']],media=/^(image|video|aparat|soundcloud|audio|embed|lottie|highlight)$/.test(b.t);
+  var AL=[['right','راست‌چین'],['center','وسط‌چین'],['left','چپ‌چین'],['justify','دوطرفه (Justify)']],WD=[['lg','بزرگ (۸۰٪)'],['md','متوسط (۶۰٪)'],['sm','کوچک (۴۰٪)']],media=/^(image|video|aparat|soundcloud|audio|embed|lottie|highlight|adbanner)$/.test(b.t);
   var SAME=[['','مثل پیش‌فرض']];
   if(b.t!=='divider'&&b.t!=='anchors'){rows+=sel('align','چینش — پیش‌فرض (موبایل و دسکتاپ)',[['','پیش‌فرض']].concat(AL))+sel('alignD','چینش فقط در دسکتاپ',SAME.concat(AL))+sel('alignM','چینش فقط در موبایل',SAME.concat(AL))}
   if(media){rows+=sel('w','اندازه — پیش‌فرض (موبایل خودکار کمی بزرگ‌تر می‌شود)',[['','کامل']].concat(WD))+sel('wD','اندازه فقط در دسکتاپ',SAME.concat([['full','کامل']],WD))+sel('wM','اندازه فقط در موبایل',SAME.concat([['full','کامل']],WD))}
@@ -127,6 +128,7 @@ function blockUI(b,i){
       if(x.t==='anchors'||x.t==='divider')return'';
       return'<label class="f row"><input type="checkbox" data-anc="'+i+'" data-tid="'+x.id+'"'+((b.targets||[]).indexOf(x.id)>=0?' checked':'')+'><span>'+(j+1)+'. '+esc(R.blabel(x))+'</span></label>'}).join('');
   }
+  if(b.t==='paragraph'||b.t==='list'||b.t==='highlight')rows+='<label class="f"><span>درج لینک داخلی به یکی از مطالب سایت (در جای مکان‌نمای متن)</span><select data-ilk="'+i+'"><option value="">— انتخاب مطلب —</option>'+SITEPOSTS.map(function(p,j){return'<option value="'+j+'">'+esc(p.title)+'</option>'}).join('')+'</select></label>';
   var sum=(b.text||b.src||b.url||b.label||b.title||'').toString().slice(0,26);
   return'<details class="d"><summary>'+(i+1)+'. '+R.BLOCK_NAMES[b.t]+(sum?' — '+esc(sum):'')+'</summary>'+rows+
    '<div class="bar"><button data-a="bup" data-i="'+i+'">⬆️</button><button data-a="bdn" data-i="'+i+'">⬇️</button><button data-a="bdel" data-i="'+i+'">🗑 حذف</button></div></details>';
@@ -207,7 +209,10 @@ body.addEventListener('input',function(e){
   else return;
   refresh();
 });
-body.addEventListener('change',function(e){if(e.target.dataset.p==='cat'){draw();save()}
+body.addEventListener('change',function(e){
+  if(e.target.dataset.ilk!==undefined&&e.target.value!==''){var bi=+e.target.dataset.ilk,pp=SITEPOSTS[+e.target.value],ta=body.querySelector('textarea[data-b="'+bi+'"][data-k="text"]');
+    if(pp&&ta){var pos=ta.selectionStart==null?ta.value.length:ta.selectionStart,sel=ta.value.slice(ta.selectionStart||0,ta.selectionEnd||0),md='['+(sel||pp.title)+']('+pp.href+')';ta.value=ta.value.slice(0,pos)+md+ta.value.slice((ta.selectionEnd||pos));P.blocks[bi].text=ta.value;refresh()}
+    e.target.value='';return}if(e.target.dataset.p==='cat'){draw();save()}
   if(/^ai_(base|key|model|px|pk)$/.test(e.target.id||'')){aiSave()}
   if(/^gh[ortb]$/.test(e.target.id||'')){localStorage.setItem('SR_GH',JSON.stringify({o:v('gho'),r:v('ghr'),b:v('ghb')||'main',t:v('ght')}))}});
 function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
@@ -220,7 +225,7 @@ body.addEventListener('click',function(e){
   if(a==='site')return loadSite();
   if(a==='aigo')return aiRun();
   if(a==='load')return loadPost(b.dataset.href);
-  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;if(t==='audio')nb.dl=true;if(t==='embed'||t==='lottie')nb.height=280;nb.id=bid();P.blocks.push(nb)}
+  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;if(t==='audio')nb.dl=true;if(t==='embed'||t==='lottie')nb.height=280;if(t==='adbanner'){nb.mode='image';nb.height=200}nb.id=bid();P.blocks.push(nb)}
   else if(a==='bdel'){if(!confirm('بلوک حذف شود؟'))return;P.blocks.splice(i,1)}
   else if(a==='bup'||a==='bdn'){var j=a==='bup'?i-1:i+1;if(j<0||j>=P.blocks.length)return;var x=P.blocks[i];P.blocks[i]=P.blocks[j];P.blocks[j]=x}
   else if(a==='radd')P.related.push({title:'',href:'',img:'',desc:''});
@@ -330,10 +335,23 @@ async function ensureCats(){
 
 /* ----- هوش مصنوعی: چینش خودکار متن ----- */
 function aiCfg(){try{return JSON.parse(localStorage.getItem('SR_AI')||'{}')}catch(e){return{}}}
-var AI_SYS='تو دستیار ویراستاری فارسی برای یک پست‌ساز هستی. متن خام یک مقاله می‌آید. فقط و فقط یک شیء JSON معتبر برگردان (بدون توضیح و بدون ```).\n'+
-'قالب: {"title":"","desc":"خلاصه ۱۲۰ تا ۱۶۰ حرف","tag":"برچسب کوتاه","seoTitle":"حداکثر ۶۰ حرف","seoDesc":"۱۲۰ تا ۱۶۰ حرف","kw":"کلمهٔ کلیدی اصلی","blocks":[...]}\n'+
-'انواع بلوک: {"t":"heading","level":2 یا 3,"text":""} ، {"t":"paragraph","text":""} ، {"t":"list","text":"هر خط یک مورد"} ، {"t":"highlight","label":"نکتهٔ مهم","text":""} ، {"t":"button","label":"","href":""} ، {"t":"image","src":"","alt":"توضیح فارسی","caption":""} ، {"t":"video","url":"لینک یوتیوب"} ، {"t":"aparat","url":"لینک آپارات"} ، {"t":"audio","src":"آدرس mp3","title":"","dl":true} ، {"t":"divider"}\n'+
-'قوانین: ۱) متن نویسنده را حفظ کن و چیزی از خودت اضافه یا حذف نکن؛ فقط ساختار بده. ۲) بخش‌های اصلی را با heading سطح ۲ (حداقل ۲ تا) و زیرمجموعه‌ها را با سطح ۳ جدا کن. ۳) پاراگراف‌های طولانی را به پاراگراف‌های ۲ تا ۴ جمله‌ای بشکن؛ در یک بلوک paragraph می‌توانی چند پاراگراف را با یک خط خالی جدا کنی. ۴) هشدار، نکتهٔ کلیدی و توصیهٔ مهم را در highlight بگذار (حداکثر چند مورد). ۵) موارد شمارشی را به list تبدیل کن. ۶) لینک‌های داخل متن را به شکل [متن](https://...) نگه دار. ۷) آدرس تصویر، ویدیو و صوت داخل متن را به بلوک مناسب تبدیل کن و برای تصویرها alt فارسی بنویس. ۸) title و desc و فیلدهای سئو را از خود متن بساز؛ kw یک عبارت طبیعی است که در عنوان و متن هم آمده باشد.';
+var SITEPOSTS=[];
+fetch('/data/posts.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.posts){SITEPOSTS=d.posts;if(typeof cur!=='undefined'&&cur==='blocks')showTab('blocks')}}).catch(function(){});
+function aiSys(){
+  var links=SITEPOSTS.filter(function(p){return p.href&&p.title}).slice(0,60).map(function(p){return '- '+p.title+' → '+p.href}).join('\n');
+  return 'تو ویراستار و متخصص سئوی فارسی برای یک پست‌ساز وب‌سایت هستی. متن خام یک مقاله می‌آید. فقط و فقط یک شیء JSON معتبر برگردان (بدون توضیح و بدون ```).\n'+
+'قالب: {"title":"","slug":"english-short-slug","desc":"","tag":"","seoTitle":"","seoDesc":"","kw":"","blocks":[...]}\n'+
+'انواع بلوک: {"t":"heading","level":2 یا 3,"text":""} ، {"t":"paragraph","text":""} ، {"t":"list","text":"هر خط یک مورد"} ، {"t":"highlight","label":"نکتهٔ مهم","text":""} ، {"t":"button","label":"","href":""} ، {"t":"image","src":"","alt":"","caption":""} ، {"t":"video","url":"لینک یوتیوب"} ، {"t":"aparat","url":"لینک آپارات"} ، {"t":"audio","src":"آدرس mp3","title":"","dl":true} ، {"t":"divider"}\n'+
+'استانداردهای سئو که باید رعایت شود:\n'+
+'۱) title عنوان جذاب ۲۰ تا ۶۵ حرف؛ seoTitle حداکثر ۶۰ حرف و شامل کلمهٔ کلیدی؛ desc و seoDesc هر کدام ۱۲۰ تا ۱۶۰ حرف، روان، شامل کلمهٔ کلیدی و بدون تکرار کامل عنوان.\n'+
+'۲) kw یک عبارت اصلی طبیعی (۲ تا ۴ کلمه) باشد که دقیقاً در title، seoTitle، seoDesc، پاراگراف اول و حداقل یکی از headingها آمده باشد.\n'+
+'۳) slug فقط حروف انگلیسی کوچک، عدد و خط تیره، ۳ تا ۶ کلمه، ترجمهٔ مفهوم موضوع.\n'+
+'۴) ساختار: یک پاراگراف مقدمهٔ کوتاه که با کلمهٔ کلیدی شروع شود؛ سپس حداقل ۳ heading سطح ۲ (توصیفی و حاوی کلمات مرتبط) و در صورت نیاز زیرمجموعه با سطح ۳؛ هیچ سطحی را رد نکن. پاراگراف‌ها ۲ تا ۴ جمله؛ در یک بلوک می‌توانی چند پاراگراف با یک خط خالی بیاوری.\n'+
+'۵) نکتهٔ کلیدی/هشدار → highlight (کم، حداکثر ۳ بار)؛ موارد شمارشی → list؛ لینک‌ها به شکل [متن](https://...) حفظ شوند؛ آدرس تصویر/ویدیو/صوت داخل متن به بلوک مناسب تبدیل شود و برای هر تصویر alt فارسی توصیفی (شامل کلمهٔ کلیدی در صورت ارتباط) نوشته شود.\n'+
+'۶) در انتهای مقاله یک جمع‌بندی کوتاه (heading + paragraph) بیاور.\n'+
+'۷) متن و محتوای نویسنده را حفظ کن؛ چیزی از خودت نساز و حقیقتی اضافه نکن؛ فقط ساختار، تقسیم‌بندی و فیلدهای سئو را بهینه کن. اگر جملهٔ اضافهٔ تکراری یا محاوره‌ای واضح است می‌توانی ویرایش جزئی کنی.\n'+
+(links?'۸) لینک داخلی: فهرست مطالب موجود سایت در زیر آمده. ۱ تا ۳ مورد که واقعاً مرتبط‌اند را به‌صورت طبیعی داخل متن پاراگراف‌ها با قالب [متن لنگر توصیفی](مسیر) بیاور (متن لنگر عبارت معنادار باشد، نه «اینجا»). اگر هیچ‌کدام مرتبط نیست، لینک نگذار و چیزی نساز.\n'+links:'۸) لینک داخلی: فهرستی در دسترس نیست؛ لینک داخلی نساز.');
+}
 function aiSave(){var px=document.getElementById('ai_px');localStorage.setItem('SR_AI',JSON.stringify({base:v('ai_base'),key:v('ai_key'),model:v('ai_model'),pk:v('ai_pk'),px:px?px.checked:true}))}
 function aiLog(t){var s=document.getElementById('st2');if(s)s.textContent=t}
 async function aiRun(){
@@ -345,7 +363,7 @@ async function aiRun(){
   var url=a.base.replace(/\/+$/,'');if(!/\/chat\/completions$/.test(url))url+='/chat/completions';
   aiLog('در حال ارسال... (ممکن است یک دقیقه طول بکشد)');
   try{
-    var payload={model:a.model,temperature:.2,messages:[{role:'system',content:AI_SYS},{role:'user',content:txt}]},r;
+    var payload={model:a.model,temperature:.2,messages:[{role:'system',content:aiSys()},{role:'user',content:txt}]},r;
     if(useP){
       if(!a.pk)return aiLog('کلید پروکسی را وارد کن (یا تیک «ارسال از طریق ورکر» را بردار).');
       var wk=(S.site.api||R.DEFAULTS.site.api||'').replace(/\/$/,'');if(!wk)return aiLog('آدرس ورکر در تنظیمات سایت ثبت نشده است.');
@@ -359,8 +377,16 @@ async function aiRun(){
     var c=j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content;if(!c)throw new Error('پاسخ خالی بود.');
     c=String(c).replace(/^[\s\S]*?(\{)/,'$1').replace(/\}[^}]*$/,'}');
     var o=JSON.parse(c),n=aiApply(o,mode);
-    aiLog('انجام شد ✔ '+n+' بلوک ساخته شد. تب «محتوا» را بررسی و اصلاح کن.');
+    aiLog('انجام شد ✔ '+n+'\nتب «محتوا» را بررسی و اصلاح کن.');
   }catch(er){aiLog('خطا: '+(er.message||er)+'\n(اگر «NetworkError» یا «Failed to fetch» است: تیک «ارسال از طریق ورکر» را بزن.)')}
+}
+function aiReport(){
+  var k=(P.seo.kw||'').trim(),t=P.seo.title||P.title,d=P.seo.desc||P.desc,fp=(P.blocks.filter(function(b){return b.t==='paragraph'})[0]||{}).text||'',hs=P.blocks.filter(function(b){return b.t==='heading'}).map(function(b){return b.text}).join(' '),
+  il=P.blocks.filter(function(b){return /\]\(\/[^)]/.test(b.text||'')}).length,w=[];
+  if(!k)w.push('کلمهٔ کلیدی ندارد');else{if(t.indexOf(k)<0)w.push('کلمهٔ کلیدی در عنوان نیست');if(d.indexOf(k)<0)w.push('کلمهٔ کلیدی در توضیح نیست');if(fp.indexOf(k)<0)w.push('کلمهٔ کلیدی در پاراگراف اول نیست');if(hs.indexOf(k)<0)w.push('کلمهٔ کلیدی در هیچ عنوانی نیست')}
+  if(d.length<100||d.length>170)w.push('طول توضیح '+d.length+' است');
+  w.push(il?il+' بلوک لینک داخلی دارد':'لینک داخلی ندارد');
+  return ' بلوک ساخته شد.\nبررسی سئو: '+(w.join('، ')||'همه چیز خوب است')+'.\n(بقیه را در تب «سئو» ببین)';
 }
 function aiApply(o,mode){
   var OK={heading:['level','text'],paragraph:['text'],list:['text'],highlight:['label','text'],button:['label','href'],image:['src','alt','caption'],video:['url','title'],aparat:['url','title'],audio:['src','title','dl'],divider:[]};
@@ -375,7 +401,8 @@ function aiApply(o,mode){
   if(o.seoTitle&&(rp||!P.seo.title))P.seo.title=String(o.seoTitle);
   if(o.seoDesc&&(rp||!P.seo.desc))P.seo.desc=String(o.seoDesc);
   if(o.kw&&(rp||!P.seo.kw))P.seo.kw=String(o.kw);
-  draw();save();return bl.length;
+  if(o.slug&&/^[a-z0-9-]{3,80}$/.test(String(o.slug))&&(rp||/^post-/.test(P.slug)))P.slug=String(o.slug);
+  draw();save();return bl.length+aiReport();
 }
 
 /* ----- پنل ----- */
