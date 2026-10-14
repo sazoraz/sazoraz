@@ -17,6 +17,7 @@
     var st = document.getElementById('cfg'); if (st) st.textContent = R.cssVars(s);
     var fl = R.fontLink(s); if (fl) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = fl; document.head.appendChild(l); }
     var m = document.createElement('meta'); m.name = 'sr-api'; m.content = s.site.api; document.head.appendChild(m);
+    if (s.site.noindex) { var rb = document.querySelector('meta[name="robots"]'); if (rb) rb.content = 'noindex,nofollow'; }
     if (s.ui.dots) document.body.classList.add('dots');
     var h = document.getElementById('hdr'), f = document.getElementById('ftr');
     if (h) h.outerHTML = R.header(s, active);

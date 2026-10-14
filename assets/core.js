@@ -94,4 +94,21 @@
       });
     }).catch(function () {});
   }
+
+  /* ---- آمار بازدید (سبک): یک درخواست کوچک برای هر صفحه، حداکثر هر ۳۰ دقیقه، بعد از بارگذاری ---- */
+  try {
+    var hp = location.pathname.replace(/index\.html$/, '');
+    if (API && /^https?:$/.test(location.protocol) && !navigator.webdriver && hp.charAt(0) === '/' && !/^\/(admin|account)\//.test(hp)) {
+      if (hp.slice(-1) !== '/') hp += '/';
+      var hk = 'sr_h' + hp, hl = 0; try { hl = +sessionStorage.getItem(hk) || 0; } catch (e) {}
+      if (Date.now() - hl > 1800000) {
+        var hsend = function () {
+          try { sessionStorage.setItem(hk, String(Date.now())); } catch (e) {}
+          var hs = read(), hb = JSON.stringify({ p: hp, t: hs ? hs.token : '' });
+          try { if (navigator.sendBeacon) navigator.sendBeacon(API + '/api/hit', hb); else fetch(API + '/api/hit', { method: 'POST', body: hb, keepalive: true }).catch(function () {}); } catch (e) {}
+        };
+        setTimeout(function () { if (document.visibilityState === 'hidden') document.addEventListener('visibilitychange', hsend, { once: true }); else hsend(); }, 1500);
+      }
+    }
+  } catch (e) {}
 })();

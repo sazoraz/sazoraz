@@ -1,0 +1,46 @@
+/* ساز و راز — تیونر | هماهنگ با تم نئو‌ممفیس */
+.tn-lead{color:var(--muted);margin:0 0 16px;max-width:60ch}
+.tn{background:var(--card);border:3px solid var(--ink);border-radius:22px;box-shadow:var(--sh) var(--sh) 0 var(--shc);padding:16px;max-width:560px;margin:0 auto 24px;position:relative;background-image:radial-gradient(rgba(255,255,255,.06) 1.5px,transparent 1.5px);background-size:18px 18px}
+.tn-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tn-sel{display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.tn-sel select{font:inherit;font-size:.95rem;color:var(--tx);background:var(--c-compose);border:3px solid var(--ink);border-radius:12px;padding:8px 10px;box-shadow:3px 3px 0 var(--shc);min-width:0}
+.tn-dial{background:#12151e;border:3px dashed rgba(255,255,255,.25);border-radius:18px;padding:10px 8px 14px;text-align:center}
+.tn-svg{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
+.tn-arc{fill:none;stroke:#2c3345;stroke-width:14;stroke-linecap:round}
+.tn-ok{fill:none;stroke:var(--c-mix);stroke-width:14;opacity:.9}
+.tn-svg .tk{stroke:#6c748a;stroke-width:2}.tn-svg .tk.m{stroke:#cfd3df;stroke-width:3}
+.tn-needle{transform-origin:150px 150px;transform:rotate(0deg);transition:transform .14s ease-out}
+.tn-needle line{stroke:var(--c-compose);stroke-width:5;stroke-linecap:round}
+.tn-needle circle{fill:var(--c-compose);stroke:#000;stroke-width:3}
+.tn-needle.on line{stroke:var(--c-extra)}
+.tn-needle.ok line,.tn-needle.ok circle{stroke:var(--c-mix);fill:var(--c-mix)}.tn-needle.ok circle{stroke:#000}
+.tn-lb{fill:#8890a4;font-size:15px;font-family:var(--fh)}
+.tn-read{margin-top:-6px}
+.tn-note{font-family:var(--fh);line-height:1;font-weight:900}
+.tn-note b{font-size:3.6rem;color:var(--text);transition:color .15s}
+.tn-note sub{font-size:1.1rem;color:var(--muted);margin-inline-start:2px}
+.tn-sol{color:var(--muted);font-size:.85rem;min-height:1.4em}
+.tn-st{font-weight:800;font-size:1.05rem;min-height:1.7em;margin-top:4px;color:var(--text)}
+.tn-st.ok{color:var(--c-mix)}.tn-st.lo{color:var(--c-extra)}.tn-st.hi{color:var(--c-sheets)}
+.tn-num{display:flex;justify-content:center;gap:18px;color:var(--muted);font-size:.85rem;direction:rtl}
+.tn [hidden]{display:none!important}
+.tn-head{direction:ltr;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:10px;align-items:center;margin:16px 0 8px}
+.tn-col{display:flex;flex-direction:column;gap:12px;direction:ltr}
+.tn-str{font-family:var(--fh);font-weight:900;font-size:1.15rem;color:var(--tx);background:var(--c);border:3px solid var(--ink);border-radius:999px;padding:9px 4px;box-shadow:3px 3px 0 var(--shc);cursor:pointer;line-height:1.2;transition:transform .1s;position:relative}
+.tn-str small{display:block;font-size:.65rem;font-weight:700;opacity:.75}
+.tn-str:nth-child(3n+1){--c:var(--c-compose)}.tn-str:nth-child(3n+2){--c:var(--c-chords)}.tn-str:nth-child(3n){--c:var(--c-sheets)}
+.tn-str:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shc)}
+.tn-str.sel{outline:3px dotted var(--text);outline-offset:3px}
+.tn-str.near{background:var(--c-mix)}
+.tn-plate{align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;padding:14px 6px;border:3px dotted rgba(255,255,255,.35);border-radius:46% 46% 18px 18px/30% 30% 18px 18px;background:linear-gradient(160deg,#242a3a,#171b26)}
+.tn-plate-fa{font-family:var(--fh);font-weight:900;font-size:clamp(.95rem,4.2vw,1.3rem);color:var(--c-compose);line-height:1.5}
+.tn-plate-en{font-family:var(--fh);font-weight:800;font-size:.62rem;letter-spacing:.18em;color:var(--muted);direction:ltr}
+.tn-act{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.tn-cal{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;font-size:.85rem;color:var(--muted)}
+.tn-cal button{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);background:var(--c-mix);color:var(--tx);font-weight:900;font-size:1.1rem;cursor:pointer;box-shadow:2px 2px 0 var(--shc)}
+.tn-cal b{color:var(--text);min-width:2.6em;text-align:center}
+.tn-msg{text-align:center;margin-top:10px;min-height:1.4em;font-size:.88rem;color:var(--c-extra)}
+.tn-how{max-width:560px;margin:0 auto 24px}
+.tn-how h2{margin-bottom:8px}.tn-how ol{padding-inline-start:1.3em;display:grid;gap:6px}.tn-how p{margin-top:10px;color:var(--muted)}
+@media(max-width:380px){.tn{padding:12px}.tn-note b{font-size:3rem}}
+@media(prefers-reduced-motion:reduce){.tn-needle{transition:none}}
