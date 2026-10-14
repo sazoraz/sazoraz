@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>تیونر آنلاین گیتار | کوک گیتار با میکروفون | ساز و راز</title>
+<meta name="description" content="تیونر آنلاین رایگان برای کوک گیتار، باس و اوکوله با میکروفون گوشی. کوک استاندارد، دراپ دی، نیم‌پرده پایین، DADGAD و اوپن؛ همراه با صدای مرجع هر سیم. ساختهٔ دامون آرمانی‌نژاد.">
+<link rel="canonical" href="https://sazoraz.github.io/tuner/"><meta name="robots" content="index,follow,max-image-preview:large">
+<meta property="og:type" content="website"><meta property="og:locale" content="fa_IR"><meta property="og:site_name" content="ساز و راز"><meta property="og:title" content="تیونر آنلاین گیتار | ساز و راز"><meta property="og:description" content="گیتارت را با میکروفون گوشی کوک کن؛ رایگان و بدون نصب."><meta property="og:url" content="https://sazoraz.github.io/tuner/">
+<meta name="theme-color" content="#0e1118"><link rel="icon" href="/assets/favicon.svg">
+<link rel="preload" href="/assets/fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/theme.css"><link rel="stylesheet" href="/assets/tuner.css"><style id="cfg"></style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"تیونر آنلاین گیتار","url":"https://sazoraz.github.io/tuner/","applicationCategory":"MultimediaApplication","operatingSystem":"Any","inLanguage":"fa-IR","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"IRR"},"author":{"@type":"Person","name":"Damon Armani"}}</script></head>
+<body class="t-chords"><a class="skip" href="#main">پرش به محتوا</a>
+<div id="hdr"></div>
+<main id="main" class="wrap">
+<div class="pg wide">
+<div class="pg-h"><h1>تیونر آنلاین گیتار</h1></div>
+<p class="tn-lead">میکروفون را روشن کن، سیم را بنواز و سوزن را روی وسط بیاور. برای شنیدن صدای مرجع، روی نام هر سیم بزن.</p>
+
+<section class="tn" id="tn" aria-label="تیونر">
+  <div class="tn-top">
+    <label class="tn-sel"><span>ساز</span><select id="tnInst"><option value="guitar">گیتار</option><option value="bass">گیتار باس</option><option value="uke">اوکوله</option></select></label>
+    <label class="tn-sel"><span>کوک</span><select id="tnTun"></select></label>
+  </div>
+
+  <div class="tn-dial" aria-live="polite">
+    <svg viewBox="0 0 300 170" class="tn-svg" role="img" aria-label="نشانگر کوک">
+      <path d="M30 150 A120 120 0 0 1 270 150" class="tn-arc"/>
+      <path d="M135.4 30.9 A120 120 0 0 1 164.6 30.9" class="tn-ok"/>
+      <g id="tnTicks"></g>
+      <g id="tnNeedle" class="tn-needle"><line x1="150" y1="150" x2="150" y2="42"/><circle cx="150" cy="150" r="9"/></g>
+      <text x="26" y="168" class="tn-lb">♭</text><text x="274" y="168" class="tn-lb" text-anchor="end">♯</text>
+    </svg>
+    <div class="tn-read">
+      <div class="tn-note"><b id="tnNote">—</b><sub id="tnOct"></sub></div>
+      <div class="tn-sol" id="tnSol">&nbsp;</div>
+      <div class="tn-st" id="tnSt">میکروفون خاموش است</div>
+      <div class="tn-num"><span id="tnHz">— هرتز</span><span id="tnCt">— سنت</span></div>
+    </div>
+  </div>
+
+  <div class="tn-head" id="tnHead">
+    <div class="tn-col" id="tnL"></div>
+    <div class="tn-plate"><span class="tn-plate-fa">دامون آرمانی‌نژاد</span><span class="tn-plate-en">DAMON ARMANI</span></div>
+    <div class="tn-col" id="tnR"></div>
+  </div>
+
+  <div class="tn-act">
+    <button class="btn" id="tnMic" type="button">🎤 روشن‌کردن میکروفون</button>
+    <button class="btn s" id="tnAuto" type="button" hidden>🔄 تشخیص خودکار سیم</button>
+  </div>
+  <div class="tn-cal"><span>فرکانس مرجع A4</span><button type="button" id="tnM" aria-label="کاهش">−</button><b id="tnA">440</b><button type="button" id="tnP" aria-label="افزایش">+</button><span>هرتز</span></div>
+  <p class="tn-msg" id="tnMsg" role="status"></p>
+</section>
+
+<section class="box tn-how">
+  <h2>چطور گیتار را کوک کنم؟</h2>
+  <ol>
+    <li>روی «روشن‌کردن میکروفون» بزن و اجازهٔ میکروفون را بده. صدا جایی ضبط یا ارسال نمی‌شود و همه‌چیز فقط روی گوشی خودت پردازش می‌شود.</li>
+    <li>محیط را ساکت کن و فقط یک سیم را باز (بدون گرفتن دستهٔ ساز) بنواز.</li>
+    <li>اگر سوزن سمت <b>♭</b> است، سیم پایین است و باید کوکش را بالا ببری. اگر سمت <b>♯</b> است، کوکش را شل کن.</li>
+    <li>وقتی سوزن وسط ایستاد و نوشتهٔ «کوک است» دیدی، سراغ سیم بعدی برو.</li>
+    <li>اگر میکروفون نداری یا می‌خواهی با گوش کوک کنی، روی نام هر سیم بزن تا صدای مرجعش پخش شود.</li>
+  </ol>
+  <p>نکته: همیشه سیم را از پایین به سمت نت درست بالا بیاور تا کوکش پایدارتر بماند.</p>
+</section>
+</div>
+</main>
+<div id="ftr"></div>
+<noscript><p style="padding:20px;text-align:center">برای استفاده از تیونر، جاوااسکریپت را فعال کنید.</p></noscript>
+<script src="/assets/render.js"></script>
+<script src="/assets/shell.js" data-active="/tuner/"></script>
+<script src="/assets/tuner.js" defer></script>
+</body></html>
