@@ -290,7 +290,7 @@ async function loadPost(h){
 
 /* ----- انتشار ----- */
 function pageList(posts){
-  var u=S.site.url.replace(/\/$/,''),x=['/','/shop/'].concat(Object.keys(R.CATS).filter(function(c){return c!=='extra'}).map(function(c){return R.CATS[c].dir}));
+  var u=S.site.url.replace(/\/$/,''),x=['/','/shop/','/tuner/'].concat(Object.keys(R.CATS).filter(function(c){return c!=='extra'}).map(function(c){return R.CATS[c].dir}));
   var s='<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   x.forEach(function(p){s+='<url><loc>'+u+p+'</loc></url>\n'});
   posts.forEach(function(p){s+='<url><loc>'+u+p.href+'</loc>'+(p.date?'<lastmod>'+p.date+'</lastmod>':'')+'</url>\n'});
