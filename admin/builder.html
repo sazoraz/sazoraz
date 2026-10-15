@@ -97,6 +97,10 @@ sections:function(){
 banner:function(){return F('banner.on','نمایش بنر','check')+F('banner.mode','نوع بنر','sel',[['text','متن + دکمه (با آیکن)'],['image','متن + دکمه + تصویر'],['html','کد دلخواه HTML / CSS / JavaScript (انیمیشن، Hyperframes و ...)']])+
   '<h4 class="g">حالت متن / تصویر</h4>'+F('banner.title','تیتر')+F('banner.text','متن','area')+F('banner.btn','دکمه (خالی = بدون دکمه)')+F('banner.href','لینک دکمه')+F('banner.icon','آیکن (حالت متن)','sel',ICONS)+F('banner.img','آدرس تصویر (حالت تصویر)')+
   '<h4 class="g">حالت کد دلخواه</h4>'+F('banner.code','کد کامل (HTML + CSS + JS)','area')+F('banner.height','ارتفاع (px)','num')+'<div class="note">کد در یک کادر ایزوله اجرا می‌شود (به بقیهٔ سایت دسترسی ندارد). می‌تواند از اسکریپت‌های CDN مثل Hyperframes، GSAP یا Lottie هم استفاده کند.</div>'},
+tbanner:function(){return'<div class="note">بنر کوچک پایین صفحهٔ تیونر (آدرس /tuner/). بعد از انتشار، فوراً روی تیونر دیده می‌شود.</div>'+F('tunerBanner.on','نمایش بنر','check')+F('tunerBanner.mode','نوع بنر','sel',[['text','متن + دکمه'],['image','تصویر یا گیف (با لینک)'],['html','کد دلخواه HTML / CSS / JavaScript']])+F('tunerBanner.href','لینک مقصد (صفحهٔ کلاس‌ها)')+F('tunerBanner.newTab','لینک در تب جدید باز شود','check')+
+  '<h4 class="g">حالت متن</h4>'+F('tunerBanner.title','تیتر')+F('tunerBanner.text','متن','area')+F('tunerBanner.btn','نوشتهٔ دکمه (خالی = بدون دکمه)')+F('tunerBanner.icon','آیکن','sel',ICONS)+
+  '<h4 class="g">حالت تصویر / گیف</h4>'+F('tunerBanner.img','آدرس تصویر یا گیف')+F('tunerBanner.alt','توضیح تصویر (برای دسترسی‌پذیری)')+
+  '<h4 class="g">حالت کد دلخواه</h4>'+F('tunerBanner.code','کد کامل (HTML + CSS + JS)','area')+F('tunerBanner.height','ارتفاع (px)','num')+'<div class="note">در حالت کد، لینک‌ها را با target="_blank" بنویس تا از کادر ایزوله بیرون باز شوند.</div>'},
 footer:function(){
   var a=S.footer.ann.map(function(x,i){var p='footer.ann.'+i;return'<details class="d"><summary>'+esc(x.title)+'</summary>'+F(p+'.label','برچسب')+F(p+'.title','عنوان')+F(p+'.text','متن','area')+F(p+'.foot','متن پایین')+F(p+'.href','لینک')+F(p+'.theme','تم','sel',THEMES)+bar('footer.ann',i)+'</details>'}).join('');
   var c=S.footer.cols.map(function(col,i){var p='footer.cols.'+i;
@@ -111,7 +115,7 @@ publish:function(){
   '<button class="pb" data-a="pub">🚀 انتشار (index.html + تنظیمات)</button><div id="st"></div>'+
   '<div class="note">توکن فقط در حافظهٔ همین مرورگر ذخیره می‌شود و فقط به api.github.com فرستاده می‌شود. بعد از انتشار، Cloudflare Pages خودش در ~۳۰ ثانیه سایت را به‌روز می‌کند.</div>'}
 };
-var NAMES={site:'سایت',look:'ظاهر',header:'هدر',hero:'هیرو',sections:'بخش‌ها',banner:'بنر',footer:'فوتر',publish:'انتشار'};
+var NAMES={site:'سایت',look:'ظاهر',header:'هدر',hero:'هیرو',sections:'بخش‌ها',banner:'بنر',tbanner:'بنر تیونر',footer:'فوتر',publish:'انتشار'};
 var cur='site';
 function gh(){try{return JSON.parse(localStorage.getItem('SR_GH')||'{}')}catch(e){return{}}}
 var tabs=document.getElementById('tabs'),body=document.getElementById('body');
