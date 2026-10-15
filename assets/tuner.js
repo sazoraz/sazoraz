@@ -53,13 +53,35 @@
     for (var i = 0; i < els.length; i++) { var k = +els[i].dataset.i; els[i].classList.toggle('sel', k === target); els[i].classList.toggle('near', near === k && target < 0); }
   }
 
-  /* ---- صدای مرجع ---- */
+  /* ---- صدای مرجع: سیم گیتار واقعی‌نما (Karplus-Strong + طنین بدنهٔ آکوستیک) ---- */
+  var CACHE = {}, curSrc = null;
+  function pluck(f, sr) {
+    var key = Math.round(f * 100) + '@' + sr; if (CACHE[key]) return CACHE[key];
+    var P = sr / f, d = P - 0.5, D = Math.floor(d - 0.5), fr = d - D, a = (1 - fr) / (1 + fr), i;
+    var T60 = Math.max(1.5, 3.4 - f / 180), rho = Math.pow(10, -3 * P / (sr * T60));
+    var buf = new Float32Array(D), seed = 12345, lp = 0, mean = 0;
+    for (i = 0; i < D; i++) { seed = (seed * 1664525 + 1013904223) >>> 0; var nz = seed / 2147483648 - 1; lp += 0.55 * (nz - lp); buf[i] = lp; }
+    var pp = Math.max(1, Math.round(0.16 * D)); for (i = D - 1; i >= pp; i--) buf[i] -= buf[i - pp] * 0.9; /* محل زخمه */
+    for (i = 0; i < D; i++) mean += buf[i]; mean /= D; var mx = 1e-6; for (i = 0; i < D; i++) { buf[i] -= mean; if (Math.abs(buf[i]) > mx) mx = Math.abs(buf[i]); } for (i = 0; i < D; i++) buf[i] /= mx;
+    var len = Math.floor(sr * 3.4), out = new Float32Array(len), idx = 0, prev = 0, apx = 0, apy = 0, n, s, l, y, peak = 0;
+    for (n = 0; n < len; n++) {
+      s = buf[idx]; out[n] = s; l = 0.5 * s + 0.5 * prev; prev = s;
+      y = a * l + apx - a * apy; apx = l; apy = y; buf[idx] = rho * y; if (++idx >= D) idx = 0;
+    }
+    if (f < 170) for (n = 0; n < len; n++) out[n] = Math.tanh(1.9 * out[n]); /* کمی هارمونیک برای بلندگوی ضعیف گوشی */
+    for (n = 0; n < len; n++) { if (Math.abs(out[n]) > peak) peak = Math.abs(out[n]); }
+    var fade = Math.floor(sr * 0.2); for (n = 0; n < len; n++) out[n] = out[n] / (peak || 1) * 0.85 * (n > len - fade ? (len - n) / fade : 1);
+    return (CACHE[key] = out);
+  }
   function ctx() { if (!ac) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); } if (ac.state === 'suspended') ac.resume(); return ac; }
   function play(f) {
-    var c = ctx(); if (!c) return; var t = c.currentTime, g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
-    var lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; g.connect(lp); lp.connect(c.destination);
-    [[1, 'triangle', 1], [2, 'sine', 0.45], [3, 'sine', 0.22]].forEach(function (p) { var o = c.createOscillator(), og = c.createGain(); o.type = p[1]; o.frequency.value = f * p[0]; og.gain.value = p[2]; o.connect(og); og.connect(g); o.start(t); o.stop(t + 2.5); });
-    mutedUntil = Date.now() + 2600;
+    var c = ctx(); if (!c) return; if (curSrc) { try { curSrc.stop(); } catch (e) {} }
+    var data = pluck(f, c.sampleRate), b = c.createBuffer(1, data.length, c.sampleRate); b.getChannelData(0).set(data);
+    var src = c.createBufferSource(); src.buffer = b; curSrc = src;
+    var chain = src, add = function (type, fq, g, q) { var n = c.createBiquadFilter(); n.type = type; n.frequency.value = fq; if (g) n.gain.value = g; if (q) n.Q.value = q; chain.connect(n); chain = n; };
+    add('peaking', 98, 5, 3.5); add('peaking', 205, 4, 3); add('peaking', 410, 2, 2); add('lowpass', 5200, 0, 0.7);
+    var g = c.createGain(); g.gain.value = 0.95; chain.connect(g); g.connect(c.destination); src.start();
+    mutedUntil = Date.now() + 3400;
   }
 
   /* ---- تشخیص زیر و بمی (NSDF / McLeod) ---- */
@@ -146,4 +168,10 @@
   document.addEventListener('visibilitychange', function () { if (document.hidden && running) stop(); });
 
   fillTunings(); buildStrings(); idle();
+  window.__tn = { pluck: pluck, detect: detect };
+
+  /* بنر کوچک (از تنظیمات سایت: «بنر تیونر» در ساز صفحهٔ اصلی) */
+  (window.SRReady || function (f) { f(); })(function () {
+    try { var el = $('tnAd'), c = window.SR_CFG && window.SR_CFG.tunerBanner; if (el && c && window.SRR && SRR.miniBanner) el.innerHTML = SRR.miniBanner(c); } catch (e) {}
+  });
 })();

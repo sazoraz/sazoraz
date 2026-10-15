@@ -96,6 +96,11 @@
       on: true, mode: 'text', img: '', code: '', height: 260, icon: 'forum', title: 'آهنگساز یا تنظیم‌کننده مستقل هستید؟',
       text: 'آثار و سمپل‌های خودتان را در فروشگاه ساز و راز با حفظ کپی‌رایت منتشر کنید.', btn: 'ثبت‌نام هنرمند', href: '/account/?mode=register'
     },
+    tunerBanner: {
+      on: true, mode: 'text', icon: 'music', title: 'کلاس‌های گیتار دامون آرمانی‌نژاد',
+      text: 'برای شرکت در کلاس‌های گیتار دامون آرمانی‌نژاد، به‌صورت خصوصی، آنلاین یا در آموزشگاه، کلیک کنید.',
+      btn: 'اطلاعات و ثبت‌نام کلاس‌ها', href: '/', img: '', alt: '', code: '', height: 160, newTab: false
+    },
     footer: {
       title: 'تابلو اعلانات', sub: 'فراخوان‌ها، دوره‌ها و به‌روزرسانی‌های ماهانه',
       about: 'ساز و راز؛ جایی برای ساختن، شنیدن و یاد گرفتن موسیقی.',
@@ -215,6 +220,20 @@
     var vis = (b.mode === 'image' && b.img) ? '<img class="bimg" src="' + esc(href(b.img)) + '" alt="' + esc(b.title) + '" loading="lazy">' : '<span class="logo">' + ic(b.icon) + '</span>';
     return '<section class="banner' + (b.mode === 'image' ? ' has-img' : '') + '"><div class="l">' + vis + '<div><h3>' + esc(b.title) + '</h3><p>' + esc(b.text) + '</p></div></div>' +
       (b.btn ? '<a class="btn" href="' + esc(href(b.href)) + '">' + esc(b.btn) + ic('arrow') + '</a>' : '') + '</section>';
+  }
+
+  /* بنر کوچک صفحهٔ تیونر: متن + دکمه / تصویر یا گیف با لینک / کد دلخواه */
+  function miniBanner(b) {
+    if (!b || !b.on) return '';
+    var tg = b.newTab ? ' target="_blank" rel="noopener"' : '';
+    if (b.mode === 'html') return b.code ? '<aside class="banner-x tbn-x">' + sandbox(b.code, b.height || 160, b.title || 'بنر') + '</aside>' : '';
+    if (b.mode === 'image') {
+      if (!b.img) return '';
+      var im = '<img src="' + esc(href(b.img)) + '" alt="' + esc(b.alt || b.title || 'بنر') + '" loading="lazy" decoding="async">';
+      return '<aside class="tbn-img">' + (b.href ? '<a href="' + esc(href(b.href)) + '"' + tg + '>' + im + '</a>' : im) + '</aside>';
+    }
+    return '<aside class="tbn"><span class="tbn-ic">' + ic(b.icon || 'music') + '</span><div class="tbn-t"><h2>' + esc(b.title) + '</h2><p>' + esc(b.text) + '</p></div>' +
+      (b.btn ? '<a class="btn" href="' + esc(href(b.href)) + '"' + tg + '>' + esc(b.btn) + ic('arrow') + '</a>' : '') + '</aside>';
   }
 
   function main(s, posts) { return hero(s) + s.sections.map(function (x) { return section(x, posts); }).join('') + banner(s); }
@@ -385,5 +404,5 @@
       '<script src="/assets/render.js"></script><script src="/assets/shell.js" data-active="' + esc(ci.dir) + '"></script><script src="/assets/archive.js" defer></script></body></html>';
   }
 
-  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, byDate: byDate, robotsMeta: robotsMeta, apId: apId, blabel: blabel };
+  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, byDate: byDate, miniBanner: miniBanner, robotsMeta: robotsMeta, apId: apId, blabel: blabel };
 });
