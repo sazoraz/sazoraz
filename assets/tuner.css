@@ -58,3 +58,6 @@
 .tbn-img img{display:block;width:100%;height:auto;border:3px solid var(--ink);border-radius:18px;box-shadow:5px 5px 0 var(--shc)}
 .tbn-x iframe{display:block;width:100%;border:3px solid var(--ink);border-radius:18px}
 @media(max-width:480px){.tbn .btn{width:100%;justify-content:center}}
+
+.tn-wide{grid-column:1/-1}
+.tn-lead,.tn-how li,.tn-how p,.tbn-t p{text-align:justify;text-justify:inter-word}

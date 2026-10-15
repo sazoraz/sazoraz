@@ -74,7 +74,7 @@
     return (CACHE[key] = out);
   }
   function ctx() { if (!ac) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return null; ac = new C(); } if (ac.state === 'suspended') ac.resume(); return ac; }
-  function play(f) {
+  function playSynth(f) {
     var c = ctx(); if (!c) return; if (curSrc) { try { curSrc.stop(); } catch (e) {} }
     var data = pluck(f, c.sampleRate), b = c.createBuffer(1, data.length, c.sampleRate); b.getChannelData(0).set(data);
     var src = c.createBufferSource(); src.buffer = b; curSrc = src;
@@ -82,6 +82,61 @@
     add('peaking', 98, 5, 3.5); add('peaking', 205, 4, 3); add('peaking', 410, 2, 2); add('lowpass', 5200, 0, 0.7);
     var g = c.createGain(); g.gain.value = 0.95; chain.connect(g); g.connect(c.destination); src.start();
     mutedUntil = Date.now() + 3400;
+  }
+
+  /* ---- صدای واقعی ساز: نمونه‌های ضبط‌شده (Soundfont) — اول از خود سایت، بعد از CDN؛ اگر نشد صدای ساختگی ---- */
+  var SND = {
+    guitar: [['acoustic_guitar_steel', 'گیتار آکوستیک (فولاد)'], ['acoustic_guitar_nylon', 'گیتار کلاسیک (نایلون)'], ['electric_guitar_clean', 'گیتار الکتریک (کلین)']],
+    bass: [['electric_bass_finger', 'باس الکتریک'], ['acoustic_bass', 'باس آکوستیک']],
+    uke: [['acoustic_guitar_nylon', 'نایلون (شبیه اوکوله)']]
+  };
+  var SF_BASES = ['/assets/snd/', 'https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/'];
+  var FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'], banks = {}, snd = 0;
+  var noteKey = function (m) { return FLAT[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); };
+  function fetchText(url) {
+    var cs = window.caches && caches.open ? caches.open('sr-tuner-v1') : Promise.resolve(null);
+    return cs.then(function (c) {
+      return (c ? c.match(url) : Promise.resolve(null)).then(function (hit) {
+        if (hit) return hit.text();
+        return fetch(url).then(function (r) { if (!r.ok) throw new Error('http'); var cp = r.clone(); return r.text().then(function (t) { if (c && t.length > 20000) { try { c.put(url, cp); } catch (e) {} } return t; }); });
+      });
+    }).catch(function () { return fetch(url).then(function (r) { if (!r.ok) throw new Error('http'); return r.text(); }); });
+  }
+  function loadBank(name) {
+    if (banks[name]) return banks[name].p;
+    var bk = banks[name] = { notes: {}, buf: {} }, i = 0;
+    bk.p = new Promise(function (ok, no) {
+      (function next() {
+        if (i >= SF_BASES.length) return no(new Error('none'));
+        fetchText(SF_BASES[i++] + name + '-mp3.js').then(function (t) {
+          var re = /"([A-G][b#]?\d)"\s*:\s*"data:audio\/[a-z0-9.+-]+;base64,([^"]+)"/g, m, n = 0;
+          while ((m = re.exec(t))) { bk.notes[m[1]] = m[2]; n++; }
+          if (n > 10) ok(bk); else next();
+        }).catch(next);
+      })();
+    });
+    bk.p.catch(function () { delete banks[name]; });
+    return bk.p;
+  }
+  function decode(bk, key) {
+    if (bk.buf[key]) return Promise.resolve(bk.buf[key]);
+    var raw = atob(bk.notes[key]), u = new Uint8Array(raw.length), k; for (k = 0; k < raw.length; k++) u[k] = raw.charCodeAt(k);
+    var c = ctx();
+    return new Promise(function (ok, no) { var r = c.decodeAudioData(u.buffer, ok, no); if (r && r.then) r.then(ok, no); }).then(function (b) { return (bk.buf[key] = b); });
+  }
+  var playTok = 0;
+  function play(f, m) {
+    var tok = ++playTok, name = SND[inst][Math.min(snd, SND[inst].length - 1)][0], key = noteKey(m), c = ctx(); if (!c) return;
+    if (curSrc) { try { curSrc.stop(); } catch (e) {} }
+    var first = !banks[name] || !banks[name].notes[key]; if (first) msg('در حال دریافت صدای ساز (فقط بار اول)...');
+    loadBank(name).then(function (bk) {
+      if (!bk.notes[key]) throw new Error('nonote');
+      return decode(bk, key);
+    }).then(function (buf) {
+      msg(''); if (tok !== playTok) return;
+      var src = c.createBufferSource(); src.buffer = buf; src.playbackRate.value = A4 / 440; curSrc = src;
+      var g = c.createGain(); g.gain.value = 1; src.connect(g); g.connect(c.destination); src.start(); mutedUntil = Date.now() + Math.min(3500, buf.duration * 1000);
+    }).catch(function () { msg(''); if (tok === playTok) playSynth(f); });
   }
 
   /* ---- تشخیص زیر و بمی (NSDF / McLeod) ---- */
@@ -159,16 +214,18 @@
   $('tnMic').onclick = function () { running ? stop() : start(); };
   $('tnAuto').onclick = function () { target = -1; this.hidden = true; mark(); };
   $('tnHead').addEventListener('click', function (e) {
-    var b = e.target.closest('.tn-str'); if (!b) return; var i = +b.dataset.i; target = i; $('tnAuto').hidden = false; mark(); play(hz(strings[i])); hist = [];
+    var b = e.target.closest('.tn-str'); if (!b) return; var i = +b.dataset.i; target = i; $('tnAuto').hidden = false; mark(); play(hz(strings[i]), strings[i]); hist = [];
   });
-  $('tnInst').onchange = function () { inst = this.value; tun = 0; fillTunings(); buildStrings(); if (running) { stop(); start(); } };
+  $('tnInst').onchange = function () { inst = this.value; tun = 0; fillTunings(); fillSnd(); buildStrings(); if (running) { stop(); start(); } };
+  function fillSnd() { var h = '', l = SND[inst]; l.forEach(function (x, i) { h += '<option value="' + i + '">' + x[1] + '</option>'; }); $('tnSnd').innerHTML = h; snd = 0; }
+  $('tnSnd').onchange = function () { snd = +this.value; };
   $('tnTun').onchange = function () { tun = +this.value; buildStrings(); };
   function setA(v) { A4 = Math.max(415, Math.min(466, v)); $('tnA').textContent = A4; }
   $('tnM').onclick = function () { setA(A4 - 1); }; $('tnP').onclick = function () { setA(A4 + 1); };
   document.addEventListener('visibilitychange', function () { if (document.hidden && running) stop(); });
 
-  fillTunings(); buildStrings(); idle();
-  window.__tn = { pluck: pluck, detect: detect };
+  fillTunings(); fillSnd(); buildStrings(); idle();
+  window.__tn = { pluck: pluck, detect: detect, play: play };
 
   /* بنر کوچک (از تنظیمات سایت: «بنر تیونر» در ساز صفحهٔ اصلی) */
   (window.SRReady || function (f) { f(); })(function () {
