@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><title>صفحه‌ساز صفحه اصلی</title>
+<link rel="stylesheet" href="/assets/theme.css"><style id="cfg"></style><link id="fontlink" rel="stylesheet" href="">
+<style>
+#fab{position:fixed;bottom:18px;left:18px;z-index:200;width:58px;height:58px;border-radius:50%;border:3px solid #000;background:var(--c-sheets);color:#fff;box-shadow:4px 4px 0 #000;display:grid;place-items:center}
+#fab .ic{width:26px;height:26px}
+#pnl{position:fixed;z-index:210;background:#12141c;color:#eee;border:3px solid #000;display:flex;flex-direction:column;font-size:13px;line-height:1.7;
+ bottom:0;left:0;right:0;height:78vh;border-radius:20px 20px 0 0;transform:translateY(105%);transition:transform .3s}
+#pnl.open{transform:none}
+@media(min-width:900px){#pnl{top:0;bottom:0;left:0;right:auto;width:420px;height:auto;border-radius:0 20px 20px 0;transform:translateX(-105%)}}
+.ph-h{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:2px solid #000;background:#1b202c}
+.ph-h b{font-size:15px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;border-bottom:2px solid #000;scrollbar-width:none}
+.tabs button{flex:none;padding:6px 14px;border-radius:9px;border:2px solid #000;background:#262c3b;color:#cfd3de;font-weight:800;font-size:12px}
+.tabs button.on{background:var(--c-compose);color:#111}
+#body{flex:1;overflow:auto;padding:14px 16px 90px}
+.f{display:flex;flex-direction:column;gap:3px;margin-bottom:11px}
+.f>span{font-size:11px;color:#9aa3b5}
+.f input[type=text],.f input[type=url],.f input[type=password],.f textarea,.f select{background:#1b202c;border:2px solid #000;border-radius:9px;color:#fff;padding:8px 10px;font:inherit;width:100%}
+.f textarea{min-height:70px;resize:vertical}
+.f input[type=color]{width:100%;height:38px;border:2px solid #000;border-radius:9px;background:#1b202c;padding:2px}
+.f.row{flex-direction:row;align-items:center;gap:10px}
+.f.row>span{font-size:12px;color:#eee}
+details.d{background:#181b25;border:2px solid #000;border-radius:12px;padding:8px 12px;margin-bottom:10px}
+details.d>summary{cursor:pointer;font-weight:800;padding:4px 0}
+details.d details.d{background:#1f2330}
+.bar{display:flex;gap:6px;margin:6px 0}
+.bar button,.pb{padding:6px 12px;border-radius:8px;border:2px solid #000;background:#262c3b;color:#fff;font-weight:800;font-size:12px}
+.pb{background:var(--c-mix);color:#111;width:100%;padding:10px;margin-bottom:8px;font-size:13px}
+.pb.dg{background:#ff6b81;color:#fff}.pb.s{background:#262c3b;color:#fff}
+.note{font-size:11px;color:#9aa3b5;background:#181b25;border:2px dashed #333;border-radius:10px;padding:8px 10px;margin:8px 0}
+#st{white-space:pre-wrap;font-size:12px;margin-top:8px;color:var(--c-mix)}
+h4.g{margin:14px 0 8px;font-size:12px;color:var(--c-compose)}
+</style></head>
+<body>
+<div id="stage"></div>
+<button id="fab" aria-label="ویرایشگر"></button>
+<div id="pnl" role="dialog" aria-label="ویرایشگر"><div class="ph-h"><b>⚡ صفحه‌ساز ساز و راز</b><button class="pb s" style="width:auto;margin:0;padding:4px 12px" id="x">بستن</button></div><div class="tabs" id="tabs"></div><div id="body"></div></div>
+
+<script src="/assets/render.js"></script>
+<script>
+(function(){
+'use strict';
+var R=window.SRR, KEY='SR_HOME_V1';
+var S; try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+S=merge(clone(R.DEFAULTS),S||{});
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function merge(a,b){for(var k in b){if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')merge(a[k],b[k]);else a[k]=b[k]}return a}
+function get(p){return p.split('.').reduce(function(o,k){return o==null?o:o[k]},S)}
+function set(p,v){var k=p.split('.'),o=S;for(var i=0;i<k.length-1;i++)o=o[k[i]];o[k[k.length-1]]=v}
+var esc=R.esc;
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- نمایش زنده ---------- */
+var stage=document.getElementById('stage'),t;
+function draw(){
+  document.getElementById('cfg').textContent=R.cssVars(S);
+  var fl=R.fontLink(S);document.getElementById('fontlink').href=fl||'';
+  document.body.className=S.ui.dots?'dots':'';
+  stage.innerHTML=R.header(S)+'<main id="main" class="wrap">'+R.main(S)+'</main>'+R.footer(S);
+}
+stage.addEventListener('click',function(e){var a=e.target.closest('a');if(a)e.preventDefault()});
+function refresh(){clearTimeout(t);t=setTimeout(function(){draw();save()},120)}
+
+/* ---------- فیلدها ---------- */
+function F(p,label,type,opts){
+  var v=get(p),h='<label class="f'+(type==='check'?' row':'')+'"><span>'+label+'</span>';
+  if(type==='area')h+='<textarea data-p="'+p+'">'+esc(v)+'</textarea>';
+  else if(type==='color')h+='<input type="color" data-p="'+p+'" value="'+esc(v)+'">';
+  else if(type==='check')h+='<input type="checkbox" data-p="'+p+'" '+(v?'checked':'')+'>';
+  else if(type==='num')h+='<input type="text" inputmode="numeric" data-n="1" data-p="'+p+'" value="'+esc(v)+'">';
+  else if(type==='sel')h+='<select data-p="'+p+'">'+opts.map(function(o){return'<option value="'+esc(o[0])+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>';
+  else h+='<input type="'+(type||'text')+'" data-p="'+p+'" value="'+esc(v)+'" '+(type==='password'?'autocomplete="off"':'')+'>';
+  return h+'</label>';
+}
+var THEMES=[['compose','زرد — آهنگسازی'],['mix','سبز — میکس'],['chords','بنفش — آکورد'],['sheets','صورتی — نت'],['extra','هلویی — فروشگاه/پنل']];
+var ICONS=R.ICON_NAMES.map(function(n){return[n,n]});
+function bar(p,i,len){return'<div class="bar"><button data-a="up" data-p="'+p+'" data-i="'+i+'">▲</button><button data-a="dn" data-p="'+p+'" data-i="'+i+'">▼</button><button data-a="del" data-p="'+p+'" data-i="'+i+'" style="background:#ff6b81">حذف</button></div>'}
+function add(p,l){return'<button class="pb s" data-a="add" data-p="'+p+'">＋ '+l+'</button>'}
+
+var TABS={
+site:function(){return F('site.name','نام سایت')+F('site.tagline','شعار زیر نام')+F('site.badge','برچسب کنار نام (خالی = حذف)')+F('site.loginLabel','متن دکمهٔ ورود (هدر)')+F('site.title','عنوان صفحه (SEO)')+F('site.desc','توضیح متا (۱۵۰–۱۶۰ حرف)','area')+F('site.url','آدرس دامنه (https://...)')+F('site.noindex','سایت ایندکس نشود (حالت آزمایشی؛ هنگام راه‌اندازی نهایی خاموش شود)','check')+F('site.ogImage','تصویر اشتراک‌گذاری (آدرس)')+F('site.favicon','آیکن (آدرس)')+F('site.api','آدرس ورکر اصلی (برای ورود کاربران)','url')+'<div class="note">آدرس ورکر را وقتی ورکر ورود/ثبت‌نام را ساختیم اینجا بگذار؛ تا آن موقع خالی بماند.</div>'},
+look:function(){
+  return '<h4 class="g">فونت</h4>'+F('fonts.heading','فونت تیترها (نام دقیق)')+F('fonts.body','فونت متن عادی')+F('fonts.customCss','آدرس CSS فونت سفارشی (اختیاری)')+
+  '<div class="note">«Vazirmatn» و «Lalezar» از فایل‌های خود سایت لود می‌شوند (سریع و بدون نیاز به گوگل). هر نام دیگری از Google Fonts لود می‌شود — در ایران ممکن است کند یا فیلتر باشد.</div>'+
+  '<h4 class="g">۵ تم رنگی</h4>'+F('themes.compose','آهنگسازی','color')+F('themes.mix','میکس و مسترینگ','color')+F('themes.chords','آکوردها','color')+F('themes.sheets','نت‌ها','color')+F('themes.extra','فروشگاه / پنل کاربری','color')+
+  '<h4 class="g">ظاهر کلی</h4>'+F('ui.bg','رنگ پس‌زمینه','color')+F('ui.card','رنگ کارت‌ها','color')+F('ui.text','رنگ متن','color')+F('ui.muted','رنگ متن کم‌رنگ','color')+F('ui.shadowColor','رنگ سایه','color')+F('ui.radius','گردی گوشه‌ها (px)','num')+F('ui.shadow','اندازه سایه (px)','num')+F('ui.dots','الگوی نقطه‌ای پس‌زمینه','check')},
+header:function(){
+  return S.menu.map(function(m,i){var p='menu.'+i;return'<details class="d"><summary>'+esc(m.label)+'</summary>'+F(p+'.label','عنوان')+F(p+'.href','لینک')+F(p+'.theme','تم رنگ','sel',THEMES)+bar('menu',i)+'</details>'}).join('')+add('menu','آیتم جدید منو')},
+hero:function(){return F('hero.eyebrow','برچسب بالا')+F('hero.title1','تیتر — خط اول')+F('hero.title2','تیتر — خط رنگی')+F('hero.text','متن توضیح','area')+F('hero.btn1','دکمه ۱')+F('hero.btn1Href','لینک دکمه ۱')+F('hero.btn2','دکمه ۲')+F('hero.btn2Href','لینک دکمه ۲')+'<h4 class="g">کارت پخش‌کننده</h4>'+F('hero.deckBadge','برچسب')+F('hero.deckTitle','عنوان آهنگ')+F('hero.deckSub','زیرعنوان')},
+sections:function(){
+  return S.sections.map(function(s,i){var p='sections.'+i;
+    var cards=s.cards.map(function(c,j){var q=p+'.cards.'+j;return'<details class="d"><summary>'+esc(c.title||'کارت')+'</summary>'+F(q+'.title','عنوان')+F(q+'.desc','توضیح کوتاه','area')+F(q+'.tag','برچسب روی تصویر')+F(q+'.meta','متن کوچک (مثلاً زمان مطالعه)')+F(q+'.img','آدرس تصویر (خالی = طرح رنگی)')+F(q+'.href','لینک')+F(q+'.cta','متن دکمه')+F(q+'.chord','نام آکورد (فقط برای کارت آکورد)')+F(q+'.notes','توضیح آکورد')+bar(p+'.cards',j)+'</details>'}).join('');
+    return'<details class="d"><summary>'+esc(s.title)+'</summary>'+F(p+'.title','عنوان بخش')+F(p+'.badge','برچسب کنار عنوان')+F(p+'.sub','زیرعنوان')+F(p+'.id','شناسه (انگلیسی، برای لینک #)')+F(p+'.theme','تم رنگ','sel',THEMES)+F(p+'.icon','آیکن','sel',ICONS)+F(p+'.viewAll','متن «مشاهده همه»')+F(p+'.href','لینک صفحه بخش')+F(p+'.auto','دسته در posts.json (برای پست خودکار)')+F(p+'.short','نام کوتاه در دسترسی سریع')+F(p+'.shortSub','زیرنام کوتاه')+'<h4 class="g">کارت‌ها</h4>'+cards+add(p+'.cards','کارت جدید')+bar('sections',i)+'</details>'}).join('')+add('sections','بخش جدید')},
+banner:function(){return F('banner.on','نمایش بنر','check')+F('banner.mode','نوع بنر','sel',[['text','متن + دکمه (با آیکن)'],['image','متن + دکمه + تصویر'],['html','کد دلخواه HTML / CSS / JavaScript (انیمیشن، Hyperframes و ...)']])+
+  '<h4 class="g">حالت متن / تصویر</h4>'+F('banner.title','تیتر')+F('banner.text','متن','area')+F('banner.btn','دکمه (خالی = بدون دکمه)')+F('banner.href','لینک دکمه')+F('banner.icon','آیکن (حالت متن)','sel',ICONS)+F('banner.img','آدرس تصویر (حالت تصویر)')+
+  '<h4 class="g">حالت کد دلخواه</h4>'+F('banner.code','کد کامل (HTML + CSS + JS)','area')+F('banner.height','ارتفاع (px)','num')+'<div class="note">کد در یک کادر ایزوله اجرا می‌شود (به بقیهٔ سایت دسترسی ندارد). می‌تواند از اسکریپت‌های CDN مثل Hyperframes، GSAP یا Lottie هم استفاده کند.</div>'},
+tbanner:function(){return'<div class="note">بنر کوچک پایین صفحهٔ تیونر (آدرس /tuner/). بعد از انتشار، فوراً روی تیونر دیده می‌شود.</div>'+F('tunerBanner.on','نمایش بنر','check')+F('tunerBanner.mode','نوع بنر','sel',[['text','متن + دکمه'],['image','تصویر یا گیف (با لینک)'],['html','کد دلخواه HTML / CSS / JavaScript']])+F('tunerBanner.href','لینک مقصد (صفحهٔ کلاس‌ها)')+F('tunerBanner.newTab','لینک در تب جدید باز شود','check')+
+  '<h4 class="g">حالت متن</h4>'+F('tunerBanner.title','تیتر')+F('tunerBanner.text','متن','area')+F('tunerBanner.btn','نوشتهٔ دکمه (خالی = بدون دکمه)')+F('tunerBanner.icon','آیکن','sel',ICONS)+
+  '<h4 class="g">حالت تصویر / گیف</h4>'+F('tunerBanner.img','آدرس تصویر یا گیف')+F('tunerBanner.alt','توضیح تصویر (برای دسترسی‌پذیری)')+
+  '<h4 class="g">حالت کد دلخواه</h4>'+F('tunerBanner.code','کد کامل (HTML + CSS + JS)','area')+F('tunerBanner.height','ارتفاع (px)','num')+'<div class="note">در حالت کد، لینک‌ها را با target="_blank" بنویس تا از کادر ایزوله بیرون باز شوند.</div>'},
+footer:function(){
+  var a=S.footer.ann.map(function(x,i){var p='footer.ann.'+i;return'<details class="d"><summary>'+esc(x.title)+'</summary>'+F(p+'.label','برچسب')+F(p+'.title','عنوان')+F(p+'.text','متن','area')+F(p+'.foot','متن پایین')+F(p+'.href','لینک')+F(p+'.theme','تم','sel',THEMES)+bar('footer.ann',i)+'</details>'}).join('');
+  var c=S.footer.cols.map(function(col,i){var p='footer.cols.'+i;
+    var l=col.links.map(function(x,j){var q=p+'.links.'+j;return F(q+'.label','لینک')+F(q+'.href','آدرس')+bar(p+'.links',j)}).join('');
+    return'<details class="d"><summary>ستون: '+esc(col.title)+'</summary>'+F(p+'.title','عنوان ستون')+l+add(p+'.links','لینک جدید')+'</details>'}).join('');
+  return F('footer.title','عنوان تابلو اعلانات')+F('footer.sub','زیرعنوان')+F('footer.about','درباره (ستون اول)','area')+F('footer.copyright','کپی‌رایت')+F('footer.moreLabel','متن دکمهٔ اعلان‌ها (مثلاً ادامه)')+'<h4 class="g">اعلان‌ها</h4>'+a+add('footer.ann','اعلان جدید')+'<h4 class="g">ستون‌های لینک</h4>'+c},
+publish:function(){
+  var g=gh();
+  return '<h4 class="g">۱) خروجی دستی</h4><button class="pb" data-a="dl-html">دانلود index.html</button><button class="pb s" data-a="dl-json">دانلود پشتیبان (JSON)</button><button class="pb s" data-a="imp">بازگردانی از پشتیبان</button><input id="impf" type="file" accept=".json" hidden>'+
+  '<h4 class="g">۲) انتشار مستقیم به گیت‌هاب (پیشنهادی)</h4>'+
+  '<label class="f"><span>نام کاربری گیت‌هاب</span><input type="text" id="gho" value="'+esc(g.o)+'"></label><label class="f"><span>نام ریپازیتوری</span><input type="text" id="ghr" value="'+esc(g.r)+'"></label><label class="f"><span>برنچ</span><input type="text" id="ghb" value="'+esc(g.b||'main')+'"></label><label class="f"><span>توکن (Fine-grained، فقط Contents: Read/Write)</span><input type="password" id="ght" value="'+esc(g.t)+'"></label>'+
+  '<button class="pb" data-a="pub">🚀 انتشار (index.html + تنظیمات)</button><div id="st"></div>'+
+  '<div class="note">توکن فقط در حافظهٔ همین مرورگر ذخیره می‌شود و فقط به api.github.com فرستاده می‌شود. بعد از انتشار، Cloudflare Pages خودش در ~۳۰ ثانیه سایت را به‌روز می‌کند.</div>'}
+};
+var NAMES={site:'سایت',look:'ظاهر',header:'هدر',hero:'هیرو',sections:'بخش‌ها',banner:'بنر',tbanner:'بنر تیونر',footer:'فوتر',publish:'انتشار'};
+var cur='site';
+function gh(){try{return JSON.parse(localStorage.getItem('SR_GH')||'{}')}catch(e){return{}}}
+var tabs=document.getElementById('tabs'),body=document.getElementById('body');
+function showTab(k){cur=k;tabs.innerHTML=Object.keys(NAMES).map(function(n){return'<button data-t="'+n+'" class="'+(n===k?'on':'')+'">'+NAMES[n]+'</button>'}).join('');body.innerHTML=TABS[k]()}
+tabs.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(b)showTab(b.dataset.t)});
+
+/* ---------- رویدادها ---------- */
+body.addEventListener('input',function(e){
+  var el=e.target,p=el.dataset.p;if(!p)return;
+  var v=el.type==='checkbox'?el.checked:el.value;
+  if(el.dataset.n){v=parseFloat(v);if(isNaN(v))return}
+  set(p,v);refresh();
+});
+body.addEventListener('change',function(e){if(e.target.dataset.p&&e.target.tagName==='SELECT'){var el=e.target;set(el.dataset.p,el.value);refresh();showTab(cur)}});
+var TPL={
+ menu:{label:'منوی جدید',href:'#',theme:'compose'},
+ sections:null,
+ 'footer.ann':{theme:'compose',label:'اطلاعیه',title:'عنوان',text:'متن',foot:'',href:'#'}
+};
+function tpl(p){
+  if(p==='menu'||p==='footer.ann')return clone(TPL[p]);
+  if(p==='sections')return{id:'sec'+Date.now().toString(36),theme:'extra',icon:'star',title:'بخش جدید',badge:'',sub:'',viewAll:'مشاهده همه',href:'#',auto:'',short:'بخش',shortSub:'',cards:[{title:'کارت نمونه',desc:'',tag:'',meta:'',cta:'مشاهده',href:'#',img:''}]};
+  if(/\.cards$/.test(p))return{title:'کارت جدید',desc:'',tag:'',meta:'',cta:'مشاهده',href:'#',img:''};
+  if(/\.links$/.test(p))return{label:'لینک جدید',href:'#'};
+  return{};
+}
+body.addEventListener('click',function(e){
+  var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a,p=b.dataset.p,i=+b.dataset.i;
+  if(a==='add'){get(p).push(tpl(p));}
+  else if(a==='del'){if(confirm('حذف شود؟'))get(p).splice(i,1);else return}
+  else if(a==='up'||a==='dn'){var arr=get(p),j=a==='up'?i-1:i+1;if(j<0||j>=arr.length)return;var x=arr[i];arr[i]=arr[j];arr[j]=x}
+  else if(a==='dl-html')return dl('index.html',pageHtml(),'text/html');
+  else if(a==='dl-json')return dl('site.config.json',JSON.stringify(S,null,2),'application/json');
+  else if(a==='imp')return document.getElementById('impf').click();
+  else if(a==='pub')return publish();
+  draw();save();showTab(cur);
+});
+body.addEventListener('change',function(e){
+  if(e.target.id==='impf'){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{S=merge(clone(R.DEFAULTS),JSON.parse(r.result));draw();save();showTab('site')}catch(x){alert('فایل معتبر نیست')}};r.readAsText(f)}
+  if(/^gh[ortb]$/.test(e.target.id||'')){var g={o:v('gho'),r:v('ghr'),b:v('ghb'),t:v('ght')};localStorage.setItem('SR_GH',JSON.stringify(g))}
+});
+function v(id){var e=document.getElementById(id);return e?e.value.trim():''}
+
+/* ---------- خروجی ---------- */
+var POSTS=[];
+fetch('/data/posts.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d&&d.posts)POSTS=d.posts}).catch(function(){});
+function pageHtml(){return R.page(S,POSTS)}
+function dl(n,c,m){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:m+';charset=utf-8'}));a.download=n;document.body.appendChild(a);a.click();a.remove()}
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+async function put(g,path,content){
+  var u='https://api.github.com/repos/'+g.o+'/'+g.r+'/contents/'+path,h={Authorization:'Bearer '+g.t,Accept:'application/vnd.github+json'},sha;
+  var r=await fetch(u+'?ref='+encodeURIComponent(g.b),{headers:h});if(r.ok)sha=(await r.json()).sha;else if(r.status!==404)throw new Error(path+' → '+r.status);
+  var w=await fetch(u,{method:'PUT',headers:h,body:JSON.stringify({message:'update '+path+' via builder',content:b64(content),branch:g.b,sha:sha})});
+  if(!w.ok)throw new Error(path+' → '+w.status+' '+((await w.json().catch(function(){return{}})).message||''));
+}
+async function publish(){
+  var g={o:v('gho'),r:v('ghr'),b:v('ghb')||'main',t:v('ght')},st=document.getElementById('st');
+  if(!g.o||!g.r||!g.t){st.textContent='نام کاربری، ریپازیتوری و توکن را پر کن.';return}
+  localStorage.setItem('SR_GH',JSON.stringify(g));st.textContent='در حال ارسال...';
+  try{await put(g,'index.html',pageHtml());st.textContent='index.html ✓';await put(g,'data/site.config.json',JSON.stringify(S,null,2));st.textContent+='\ndata/site.config.json ✓\nمنتشر شد. تا حدود ۳۰ ثانیه دیگر روی سایت دیده می‌شود.'}
+  catch(err){st.textContent='خطا: '+err.message+'\n(توکن یا نام ریپازیتوری را بررسی کن)'}
+}
+
+/* ---------- پنل ---------- */
+var pnl=document.getElementById('pnl'),fab=document.getElementById('fab');
+fab.innerHTML=R.ic('sliders');
+fab.onclick=function(){pnl.classList.toggle('open')};document.getElementById('x').onclick=function(){pnl.classList.remove('open')};
+draw();showTab('site');
+})();
+</script></body></html>
