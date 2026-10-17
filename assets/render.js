@@ -276,7 +276,7 @@
     extra: { theme: 'extra', name: 'متفرقه', dir: '/blog/' }
   };
   var POST_DEFAULT = { slug: '', cat: 'compose', title: '', desc: '', img: '', imgAlt: '', tag: '', readTime: '', date: '', updated: '', author: 'ساز و راز', comments: true, blocks: [], related: [], align: 'justify', seo: { title: '', desc: '', noindex: false, kw: '' } };
-  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده', aparat: 'ویدیوی آپارات', lottie: 'انیمیشن لوتی (Lottie)', embed: 'انیمیشن / کد HTML-CSS-JS', anchors: 'لنگر (فهرست پیوند به بلوک‌ها)', adbanner: 'بنر تبلیغاتی (گیف / تصویر / کد متحرک)' };
+  var BLOCK_NAMES = { paragraph: 'پاراگراف', heading: 'عنوان', image: 'تصویر', video: 'ویدیوی یوتیوب', soundcloud: 'ساندکلاد', audio: 'فایل صوتی', highlight: 'نکتهٔ مهم', list: 'فهرست', button: 'دکمه / دانلود', divider: 'جداکننده', aparat: 'ویدیوی آپارات', lottie: 'انیمیشن لوتی (Lottie)', embed: 'انیمیشن / کد HTML-CSS-JS', anchors: 'لنگر (فهرست پیوند به بلوک‌ها)', adbanner: 'بنر تبلیغاتی (گیف / تصویر / کد متحرک)', gate: 'بلوک مادر — فقط اعضا / پرمیوم (شامل چند بلوک بعدی)' };
   function catInfo(s, cat) {
     var c = CATS[cat] || CATS.extra, sec = (s.sections || []).filter(function (x) { return x.auto === cat; })[0];
     return { theme: c.theme, dir: c.dir, name: (sec && sec.short) || c.name };
@@ -345,9 +345,37 @@
   function relCard(r) {
     return '<article class="card"><div class="thumb">' + (r.img ? '<img src="' + esc(href(r.img)) + '" alt="' + esc(r.title) + '" loading="lazy" decoding="async">' : '<div class="ph"></div>') + '</div><div class="card-b"><h3><a class="stretch" href="' + esc(href(r.href)) + '">' + esc(r.title) + '</a></h3>' + (r.desc ? '<p>' + esc(r.desc) + '</p>' : '') + '</div><span class="cta">مشاهده</span></article>';
   }
+  var GATE_LV = { login: 'همهٔ کاربران واردشده', premium: 'فقط کاربران پرمیوم' };
+  function gateRange(blocks, i) { var n = parseInt(blocks[i].count, 10) || 0; return Math.max(0, Math.min(n, blocks.length - i - 1)); }
+  function renderOne(b, i, all, tg) { var h = wrapBlock(b, blockHtml(b, i, all)); return (b.id && tg[b.id] && h) ? '<div class="atg" id="a-' + esc(b.id) + '">' + h + '</div>' : h; }
+  function anchorTargets(p) { var tg = {}; (p.blocks || []).forEach(function (b) { if (b.t === 'anchors') (b.targets || []).forEach(function (id) { tg[id] = 1; }); }); return tg; }
+  function gateBox(b) {
+    var lv = b.level === 'premium' ? 'premium' : 'login', ttl = lv === 'premium' ? 'این بخش ویژهٔ کاربران پرمیوم است' : 'این بخش ویژهٔ کاربران عضو است';
+    var msg = b.gmsg || (lv === 'premium' ? 'برای دیدن این بخش باید حساب پرمیوم داشته باشید.' : 'برای دیدن این بخش وارد حساب کاربری خود شوید یا ثبت‌نام کنید.');
+    return '<div class="gate" id="g-' + esc(b.id) + '" data-gid="' + esc(b.id) + '" data-lv="' + lv + '"><div class="gate-box"><span class="gate-ic" aria-hidden="true">🔒</span><b>' + ttl + '</b><p>' + esc(msg) + '</p>' +
+      '<div class="gate-act">' + (lv === 'premium' ? '<a class="btn" href="/shop/">دریافت پرمیوم</a>' : '') + '<a class="btn" href="/account/">ورود / ثبت‌نام</a></div></div></div>';
+  }
+  /* محتوای بلوک‌های مادر برای ارسال به ورکر (در خود صفحه نمی‌آید) */
+  function gateParts(s, p) {
+    var all = p.blocks || [], tg = anchorTargets(p), out = [];
+    all.forEach(function (b, i) { if (b.t !== 'gate' || !b.id) return; var n = gateRange(all, i), h = ''; for (var k = i + 1; k <= i + n; k++) h += renderOne(all[k], k, all, tg); out.push({ id: b.id, level: b.level === 'premium' ? 'premium' : 'login', html: h }); });
+    return out;
+  }
   function postBody(s, p, opt) {
-    var tg = {}; (p.blocks || []).forEach(function (b) { if (b.t === 'anchors') (b.targets || []).forEach(function (id) { tg[id] = 1; }); });
-    var ci = catInfo(s, p.cat), heads = [], bodyHtml = (p.blocks || []).map(function (b, i) { if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 }); var h = wrapBlock(b, blockHtml(b, i, p.blocks)); return (b.id && tg[b.id] && h) ? '<div class="atg" id="a-' + esc(b.id) + '">' + h + '</div>' : h; }).join('');
+    var all = p.blocks || [], tg = anchorTargets(p), ci = catInfo(s, p.cat), heads = [], bodyHtml = '', i, k, n, h, b;
+    for (i = 0; i < all.length; i++) {
+      b = all[i];
+      if (b.t === 'gate') {
+        n = gateRange(all, i);
+        if (opt && opt.preview) {
+          h = ''; for (k = i + 1; k <= i + n; k++) h += renderOne(all[k], k, all, tg);
+          bodyHtml += '<div class="gate gate-pv"><div class="gate-tag">🔒 ' + GATE_LV[b.level === 'premium' ? 'premium' : 'login'] + ' — پیش‌نمایش (' + n + ' بلوک)</div>' + h + '</div>';
+        } else bodyHtml += gateBox(b);
+        i += n; continue;
+      }
+      if (b.t === 'heading' && b.text) heads.push({ id: 'h' + i, text: b.text, l: b.level === 3 ? 3 : 2 });
+      bodyHtml += renderOne(b, i, all, tg);
+    }
     var toc = heads.length >= 3 ? '<nav class="toc" aria-label="فهرست مطالب"><b>فهرست مطالب</b><ol>' + heads.map(function (h) { return '<li' + (h.l === 3 ? ' style="margin-right:16px;opacity:.85"' : '') + '><a href="#' + h.id + '">' + esc(h.text) + '</a></li>'; }).join('') + '</ol></nav>' : '';
     var meta = [faDate(p.date), readMin(p), p.author].filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
     var rel = (p.related || []).filter(function (r) { return r.title && r.href; });
@@ -363,6 +391,7 @@
   function postJsonLd(s, p) {
     var ci = catInfo(s, p.cat), u = s.site.url.replace(/\/$/, ''), url = postUrl(s, p);
     var art = { '@type': 'Article', headline: p.title, description: p.seo && p.seo.desc || p.desc, inLanguage: 'fa-IR', mainEntityOfPage: url, author: { '@type': 'Person', name: p.author || s.site.name }, publisher: { '@type': 'Organization', name: s.site.name, logo: { '@type': 'ImageObject', url: absUrl(s, s.site.favicon) } } };
+    if ((p.blocks || []).some(function (b) { return b.t === 'gate'; })) { art.isAccessibleForFree = false; art.hasPart = [{ '@type': 'WebPageElement', isAccessibleForFree: false, cssSelector: '.gate' }]; }
     art.wordCount = words(p); art.articleSection = ci.name; var kw = (p.seo && p.seo.kw) || p.tag; if (kw) art.keywords = kw; if (p.img) art.image = [absUrl(s, p.img)]; if (p.date) art.datePublished = p.date; art.dateModified = p.updated || p.date || undefined;
     var bc = { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: 'خانه', item: u + '/' }, { '@type': 'ListItem', position: 2, name: ci.name, item: u + ci.dir }, { '@type': 'ListItem', position: 3, name: p.title, item: url }] };
     return JSON.stringify({ '@context': 'https://schema.org', '@graph': [art, bc] }).replace(/</g, '\\u003c');
@@ -404,5 +433,5 @@
       '<script src="/assets/render.js"></script><script src="/assets/shell.js" data-active="' + esc(ci.dir) + '"></script><script src="/assets/archive.js" defer></script></body></html>';
   }
 
-  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, byDate: byDate, miniBanner: miniBanner, robotsMeta: robotsMeta, apId: apId, blabel: blabel };
+  return { DEFAULTS: DEFAULTS, ICON_NAMES: ICON_NAMES, esc: esc, ic: ic, cssVars: cssVars, fontLink: fontLink, header: header, footer: footer, main: main, section: section, card: card, page: page, CATS: CATS, POST_DEFAULT: POST_DEFAULT, BLOCK_NAMES: BLOCK_NAMES, catInfo: catInfo, postUrl: postUrl, postBody: postBody, postHtml: postHtml, archivePage: archivePage, readMin: readMin, ytId: ytId, byDate: byDate, miniBanner: miniBanner, robotsMeta: robotsMeta, apId: apId, blabel: blabel, gateParts: gateParts };
 });

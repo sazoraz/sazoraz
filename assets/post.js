@@ -63,4 +63,27 @@
     form.appendChild(f);
   }
   load(); draw();
+
+  /* محتوای ویژهٔ اعضا / پرمیوم (بلوک مادر): محتوا در خود صفحه نیست و بعد از بررسی از ورکر دریافت می‌شود */
+  var gates = document.querySelectorAll('.gate[data-gid]');
+  if (gates.length) {
+    var ses = SR.session && SR.session(), slug = ((document.querySelector('[data-slug]') || {}).dataset || {}).slug || location.pathname.split('/').filter(Boolean).pop();
+    var say = function (g, title, msg, shop) { var b = g.querySelector('.gate-box'); if (!b) return; b.innerHTML = ''; b.appendChild(el('span', 'gate-ic', '🔒')); b.appendChild(el('b', '', title)); b.appendChild(el('p', '', msg)); if (shop) { var a = el('div', 'gate-act'), l = el('a', 'btn', 'دریافت پرمیوم'); l.href = '/shop/'; a.appendChild(l); b.appendChild(a); } };
+    if (ses && API) {
+      gates.forEach(function (g) { var p = g.querySelector('.gate-box p'); if (p) p.textContent = 'در حال بارگذاری...'; var a = g.querySelector('.gate-act'); if (a) a.hidden = true; });
+      SR.fetch('/api/gate?post=' + encodeURIComponent(slug)).then(function (r) { if (r.status === 401) throw new Error('auth'); if (!r.ok) throw new Error('http'); return r.json(); }).then(function (d) {
+        gates.forEach(function (g) {
+          var id = g.dataset.gid;
+          if (d.parts && d.parts[id] != null) { g.className = 'gate open'; g.innerHTML = d.parts[id]; }
+          else if (d.locked && d.locked[id]) say(g, 'این بخش ویژهٔ کاربران پرمیوم است', 'حساب شما فعلاً پرمیوم نیست. برای دیدن این بخش پرمیوم تهیه کنید.', true);
+          else say(g, 'محتوا در دسترس نیست', 'این بخش هنوز آماده نشده است؛ کمی بعد دوباره سر بزنید.');
+        });
+      }).catch(function (e) {
+        gates.forEach(function (g) {
+          if (e && e.message === 'auth') { var p = g.querySelector('.gate-box p'); if (p) p.textContent = 'نشست شما منقضی شده؛ دوباره وارد شوید.'; var a = g.querySelector('.gate-act'); if (a) a.hidden = false; }
+          else say(g, 'خطا در دریافت', 'دریافت محتوا ممکن نشد؛ صفحه را دوباره بارگذاری کنید.');
+        });
+      });
+    }
+  }
 })();
