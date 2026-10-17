@@ -106,8 +106,11 @@ var BF={
  highlight:[['label','عنوان کادر (خالی = نکتهٔ مهم)'],['text','متن نکته','area']],
  list:[['text','هر خط یک مورد','area']],
  button:[['label','متن دکمه'],['href','لینک (دانلود/صفحه)'],['note','توضیح کنار دکمه']],
- divider:[]
+ divider:[],
+ gate:[['level','چه کسانی بتوانند ببینند؟','sel',[['login','همهٔ کاربران واردشده (لاگین)'],['premium','فقط کاربران پرمیوم']]],['count','تعداد بلوک‌های بعدی که زیرمجموعهٔ این بلوک‌اند','num'],['gmsg','پیام برای کسانی که دسترسی ندارند (خالی = پیام پیش‌فرض)']]
 };
+var LOCKS={};
+function calcLocks(){LOCKS={};var a=P.blocks;for(var i=0;i<a.length;i++){if(a[i].t==='gate'){var n=Math.max(0,Math.min(parseInt(a[i].count,10)||0,a.length-i-1));for(var k=i+1;k<=i+n;k++)LOCKS[k]=a[i].level==='premium'?'p':'l';i+=n}}}
 function blockUI(b,i){
   var rows=(BF[b.t]||[]).map(function(f){
     var v=b[f[0]]==null?'':b[f[0]],lab=f[1],t=f[2];
@@ -122,17 +125,18 @@ function blockUI(b,i){
   var sel=function(k,lab,opts){return'<label class="f"><span>'+lab+'</span><select data-b="'+i+'" data-k="'+k+'">'+opts.map(function(o){return'<option value="'+o[0]+'"'+((b[k]||'')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select></label>'};
   var AL=[['right','راست‌چین'],['center','وسط‌چین'],['left','چپ‌چین'],['justify','دوطرفه (Justify)']],WD=[['lg','بزرگ (۸۰٪)'],['md','متوسط (۶۰٪)'],['sm','کوچک (۴۰٪)']],media=/^(image|video|aparat|soundcloud|audio|embed|lottie|highlight|adbanner)$/.test(b.t);
   var SAME=[['','مثل پیش‌فرض']];
-  if(b.t!=='divider'&&b.t!=='anchors'){rows+=sel('align','چینش — پیش‌فرض (موبایل و دسکتاپ)',[['','پیش‌فرض']].concat(AL))+sel('alignD','چینش فقط در دسکتاپ',SAME.concat(AL))+sel('alignM','چینش فقط در موبایل',SAME.concat(AL))}
+  if(b.t!=='divider'&&b.t!=='anchors'&&b.t!=='gate'){rows+=sel('align','چینش — پیش‌فرض (موبایل و دسکتاپ)',[['','پیش‌فرض']].concat(AL))+sel('alignD','چینش فقط در دسکتاپ',SAME.concat(AL))+sel('alignM','چینش فقط در موبایل',SAME.concat(AL))}
   if(media){rows+=sel('w','اندازه — پیش‌فرض (موبایل خودکار کمی بزرگ‌تر می‌شود)',[['','کامل']].concat(WD))+sel('wD','اندازه فقط در دسکتاپ',SAME.concat([['full','کامل']],WD))+sel('wM','اندازه فقط در موبایل',SAME.concat([['full','کامل']],WD))}
-  if(b.t!=='divider'&&b.t!=='anchors')rows+='<label class="f"><span>نام این بلوک در لنگر (اختیاری؛ خالی = خودکار)</span><input type="text" data-b="'+i+'" data-k="alabel" value="'+esc(b.alabel||'')+'"></label>';
+  if(b.t!=='divider'&&b.t!=='anchors'&&b.t!=='gate')rows+='<label class="f"><span>نام این بلوک در لنگر (اختیاری؛ خالی = خودکار)</span><input type="text" data-b="'+i+'" data-k="alabel" value="'+esc(b.alabel||'')+'"></label>';
   if(b.t==='anchors'){
     rows+='<div class="f"><span>این بلوک‌ها در فهرست لنگر بیایند (با کلیک روی هر مورد، صفحه به همان بلوک می‌رود):</span></div>'+P.blocks.map(function(x,j){
       if(x.t==='anchors'||x.t==='divider')return'';
       return'<label class="f row"><input type="checkbox" data-anc="'+i+'" data-tid="'+x.id+'"'+((b.targets||[]).indexOf(x.id)>=0?' checked':'')+'><span>'+(j+1)+'. '+esc(R.blabel(x))+'</span></label>'}).join('');
   }
   if(b.t==='paragraph'||b.t==='list'||b.t==='highlight')rows+='<label class="f"><span>درج لینک داخلی به یکی از مطالب سایت (در جای مکان‌نمای متن)</span><select data-ilk="'+i+'"><option value="">— انتخاب مطلب —</option>'+SITEPOSTS.map(function(p,j){return'<option value="'+j+'">'+esc(p.title)+'</option>'}).join('')+'</select></label>';
-  var sum=(b.text||b.src||b.url||b.label||b.title||'').toString().slice(0,26);
-  return'<details class="d"><summary>'+(i+1)+'. '+R.BLOCK_NAMES[b.t]+(sum?' — '+esc(sum):'')+'</summary>'+rows+
+  if(b.t==='gate')rows='<div class="note">این بلوک خودش چیزی نشان نمی‌دهد؛ فقط «چند بلوک بعد از خودش» را قفل می‌کند. مثلاً عدد ۳ یعنی سه بلوک پایین این بلوک فقط برای گروه انتخاب‌شده دیده شود. بلوک‌های قفل‌شده در فهرست با 🔒 مشخص می‌شوند. محتوای قفل‌شده داخل صفحهٔ سایت نیست و فقط بعد از بررسی ورود/پرمیوم از ورکر دریافت می‌شود.</div>'+rows;
+  var sum=(b.t==='gate'?((b.level==='premium'?'پرمیوم':'لاگین')+' — '+(parseInt(b.count,10)||0)+' بلوک'):(b.text||b.src||b.url||b.label||b.title||'').toString().slice(0,26));
+  return'<details class="d"><summary>'+(LOCKS[i]?'🔒 ':'')+(i+1)+'. '+R.BLOCK_NAMES[b.t]+(sum?' — '+esc(sum):'')+'</summary>'+rows+
    '<div class="bar"><button data-a="bup" data-i="'+i+'">⬆️</button><button data-a="bdn" data-i="'+i+'">⬇️</button><button data-a="bdel" data-i="'+i+'">🗑 حذف</button></div></details>';
 }
 
@@ -155,7 +159,7 @@ var TABS={
  blocks:function(){
   var opts=Object.keys(R.BLOCK_NAMES).map(function(k){return'<option value="'+k+'">'+R.BLOCK_NAMES[k]+'</option>'}).join('');
   return'<div class="f"><span>افزودن بلوک جدید</span><select id="nb">'+opts+'</select></div><button class="pb" data-a="badd">➕ افزودن به انتهای پست</button><h4 class="g">بلوک‌ها (به ترتیب)</h4>'+
-   (P.blocks.length?P.blocks.map(blockUI).join(''):'<div class="note">هنوز بلوکی نیست. از بالا اضافه کن.</div>');
+   (P.blocks.length?(calcLocks(),P.blocks.map(blockUI)).join(''):'<div class="note">هنوز بلوکی نیست. از بالا اضافه کن.</div>');
  },
  related:function(){
   return'<div class="note">اگر چیزی اینجا نگذاری، سایت خودش چند مطلب هم‌دسته را نشان می‌دهد.</div>'+
@@ -190,6 +194,7 @@ var TABS={
  publish:function(){
   var g=gh();
   return'<label class="f"><span>نام کاربری گیت‌هاب (یا Organization)</span><input type="text" class="ltr" id="gho" value="'+esc(g.o||'')+'"></label><label class="f"><span>نام ریپازیتوری</span><input type="text" class="ltr" id="ghr" value="'+esc(g.r||'')+'"></label><label class="f"><span>برنچ</span><input type="text" class="ltr" id="ghb" value="'+esc(g.b||'main')+'"></label><label class="f"><span>توکن (همان توکن ساز صفحهٔ اصلی)</span><input type="password" class="ltr" id="ght" value="'+esc(g.t||'')+'"></label>'+
+   '<label class="f"><span>کلید محتوای ویژه (همان GATE_KEY ورکر — فقط اگر پست بلوک مادر دارد)</span><input type="password" class="ltr" id="gtk" value="'+esc(localStorage.getItem('SR_GATE')||'')+'"></label>'+
    '<button class="pb" data-a="pub">🚀 انتشار پست</button><button class="pb s" data-a="all">🔄 انتشار مجدد همهٔ پست‌ها</button><button class="pb s" data-a="cats">📂 ساخت صفحهٔ همهٔ دسته‌ها (یک‌بار)</button><button class="pb dg" data-a="unpub">🗑 حذف این پست از سایت</button><button class="pb s" data-a="dl">⬇️ دانلود HTML پست</button><div id="st"></div>'+
    '<div class="note">انتشار این‌ها را می‌نویسد: صفحهٔ پست، فایل منبع برای ویرایش بعدی، فهرست پست‌ها (برای نمایش خودکار در صفحهٔ اصلی و دسته) و نقشهٔ سایت (sitemap.xml). حدود ۳۰ ثانیه بعد روی سایت است.</div>';
  }
@@ -227,7 +232,7 @@ body.addEventListener('click',function(e){
   if(a==='site')return loadSite();
   if(a==='aigo')return aiRun();
   if(a==='load')return loadPost(b.dataset.href);
-  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;if(t==='audio')nb.dl=true;if(t==='embed'||t==='lottie')nb.height=280;if(t==='adbanner'){nb.mode='image';nb.height=200}nb.id=bid();P.blocks.push(nb)}
+  if(a==='badd'){var t=document.getElementById('nb').value,nb={t:t};if(t==='heading')nb.level=2;if(t==='audio')nb.dl=true;if(t==='embed'||t==='lottie')nb.height=280;if(t==='adbanner'){nb.mode='image';nb.height=200}if(t==='gate'){nb.level='login';nb.count=1}nb.id=bid();P.blocks.push(nb)}
   else if(a==='bdel'){if(!confirm('بلوک حذف شود؟'))return;P.blocks.splice(i,1)}
   else if(a==='bup'||a==='bdn'){var j=a==='bup'?i-1:i+1;if(j<0||j>=P.blocks.length)return;var x=P.blocks[i];P.blocks[i]=P.blocks[j];P.blocks[j]=x}
   else if(a==='radd')P.related.push({title:'',href:'',img:'',desc:''});
@@ -243,6 +248,15 @@ body.addEventListener('click',function(e){
 
 /* ----- گیت‌هاب ----- */
 function g0(){var g={o:v('gho')||gh().o,r:v('ghr')||gh().r,b:v('ghb')||gh().b||'main',t:v('ght')||gh().t};if(!g.o||!g.r||!g.t)throw new Error('در تب «انتشار» نام کاربری، ریپازیتوری و توکن را پر کن.');localStorage.setItem('SR_GH',JSON.stringify(g));return g}
+function gateKey(){var e=document.getElementById('gtk');var k=e?e.value.trim():'';if(k)localStorage.setItem('SR_GATE',k);return k||localStorage.getItem('SR_GATE')||''}
+async function gatePut(slug,parts){
+  var key=gateKey(),api=(S.site.api||R.DEFAULTS.site.api||'').replace(/\/$/,'');
+  if(!key){if(parts.length)throw new Error('این پست بلوک مادر (محتوای ویژه) دارد؛ در تب «انتشار» «کلید محتوای ویژه» را وارد کن.');return false}
+  if(!api)throw new Error('آدرس ورکر در تنظیمات سایت خالی است.');
+  var r=await fetch(api+'/api/gate/put',{method:'POST',headers:{'Content-Type':'application/json','X-Gate-Key':key},body:JSON.stringify({post:slug,parts:parts})});
+  if(!r.ok){var m='';try{m=(await r.json()).error||''}catch(e){}throw new Error('ارسال محتوای ویژه به ورکر شکست خورد ('+r.status+') '+m)}
+  return true;
+}
 function b64(s){return btoa(unescape(encodeURIComponent(s)))}
 function ub64(s){return decodeURIComponent(escape(atob(s.replace(/\s/g,''))))}
 function H(g){return{Authorization:'Bearer '+g.t,Accept:'application/vnd.github+json'}}
@@ -314,6 +328,7 @@ async function republishAll(){
       var slug=posts[i].href.split('/').filter(Boolean).pop(),f=await getF(g,'data/posts/'+slug+'.json');
       if(!f){log('⚠ منبع پیدا نشد: '+slug,true);continue}
       var o=JSON.parse(ub64(f.content)),ci=R.catInfo(S,o.cat);
+      var gp2=R.gateParts(S,o);if(gp2.length){try{await gatePut(o.slug,gp2)}catch(e){log('⚠ '+o.slug+': '+e.message,true);continue}}
       await putF(g,ci.dir.slice(1)+o.slug+'/index.html',b64(R.postHtml(S,o)),'republish '+o.slug);n++;log('✓ '+o.slug+' ('+n+'/'+posts.length+')',true);
     }
     var cats=[];for(var c in R.CATS){if(c!=='extra')cats.push(c)}
@@ -330,7 +345,8 @@ async function publish(){
     if(!o.date)o.date=today();o.updated=today();P.date=o.date;P.updated=o.updated;save();
     if(S.site.url.indexOf('example.com')>=0)log('⚠ آدرس دامنه هنوز example.com است؛ در ساز صفحهٔ اصلی، تب «سایت» اصلاحش کن و دوباره منتشر کن.');
     var ci=R.catInfo(S,o.cat),href=ci.dir+o.slug+'/',base=ci.dir.slice(1)+o.slug;
-    log('در حال انتشار...',true);
+    var gp=R.gateParts(S,o);log('در حال انتشار...',true);
+    if(await gatePut(o.slug,gp))log('✓ محتوای ویژه در ورکر ('+gp.length+' بلوک مادر)',true);
     await putF(g,base+'/index.html',b64(R.postHtml(S,o)),'post '+o.slug);log('✓ صفحهٔ پست',true);
     await putF(g,'data/posts/'+o.slug+'.json',b64(JSON.stringify(o,null,1)),'post source '+o.slug);log('✓ فایل منبع',true);
     var posts=(await readPosts(g)).filter(function(p){return p.href!==href});
@@ -344,7 +360,7 @@ async function unpublish(){
   try{
     var g=g0(),o=out();if(!confirm('این پست از سایت حذف شود؟'))return;
     var ci=R.catInfo(S,o.cat),href=ci.dir+o.slug+'/';log('در حال حذف...');
-    await delF(g,ci.dir.slice(1)+o.slug+'/index.html');await delF(g,'data/posts/'+o.slug+'.json');
+    await delF(g,ci.dir.slice(1)+o.slug+'/index.html');await delF(g,'data/posts/'+o.slug+'.json');try{await gatePut(o.slug,[])}catch(e){log('⚠ '+e.message,true)}
     var posts=(await readPosts(g)).filter(function(p){return p.href!==href});await writePosts(g,posts);
     await rebuildListings(g,posts,[o.cat]);
     log('حذف شد ✔',true);
